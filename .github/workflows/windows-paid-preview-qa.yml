@@ -59,8 +59,10 @@ jobs:
           "qa-app-main-js:" | Set-Content "windows-qa/QA_LAUNCH_ENV.txt"
           $exe | Add-Content "windows-qa/QA_LAUNCH_ENV.txt"
           node --check qa-app/main.cjs
-          & $exe "--qa-capture=$target" "--enable-logging" "--log-file=$env:ELECTRON_LOG_FILE"
-          $exitCode = $LASTEXITCODE
+          $env:NIGHT_QA_CAPTURE_DIR = $target
+          $p = Start-Process -FilePath $exe -ArgumentList @("--qa-capture=$target", "--enable-logging", "--log-file=$env:ELECTRON_LOG_FILE") -PassThru -Wait -NoNewWindow
+          $exitCode = $p.ExitCode
+          Write-Host "QA_EXIT_CODE $exitCode"
           Get-ChildItem windows-qa | ForEach-Object { Write-Host "QA_FILE $($_.Name)" }
           foreach ($report in @("WINDOWS_START_ERROR.txt", "WINDOWS_QA_ERROR.txt", "WINDOWS_QA_STAGE.txt", "electron.log")) {
             if (Test-Path "windows-qa/$report") { Get-Content "windows-qa/$report" }
