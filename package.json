@@ -1,0 +1,12 @@
+{
+  "name": "night-office-auditor-expanded",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Expanded offline narrative edition of Night Office Auditor with 24 fictional audit mystery cases.",
+  "scripts": {
+    "test": "node --test tests/*.test.cjs"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
