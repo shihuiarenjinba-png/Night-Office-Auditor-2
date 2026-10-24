@@ -1,0 +1,19 @@
+name: Branching drama CASE04 QA
+on:
+  push:
+    branches:
+      - work/branching-drama-case04-20261024
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+      - name: Verify all paid game regressions and narrative branches
+        run: npm test
