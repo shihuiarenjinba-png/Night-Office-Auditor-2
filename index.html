@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none';script-src 'self';style-src 'self';connect-src 'none';img-src 'self' data:;object-src 'none';frame-src 'none';base-uri 'none'">
+<title>深夜監査室 — Expanded Edition</title>
+<link rel="stylesheet" href="./styles.css">
+<script defer src="./src/engine.js"></script>
+<script defer src="./src/app.js"></script>
+<script defer src="./src/operation-tabs.js"></script>
+</head>
+<body>
+<div class="night-city" aria-hidden="true"><div class="moon"></div><div class="windows"></div><div class="lamp-glow"></div></div>
+<main class="game-shell">
+<header class="masthead">
+  <div class="brand">
+    <h1>深夜監査室</h1>
+    <p>NIGHT OFFICE AUDITOR — EXPANDED EDITION</p>
+  </div>
+  <blockquote id="signatureLine">深夜、数字は嘘をつくことがある。</blockquote>
+  <div class="hud" aria-label="進行状況">
+    <div><small>夜の案件</small><strong id="count">1 / 24</strong><span>CASE</span></div>
+    <div><small>評価点</small><strong id="score">0</strong><span>SCORE</span></div>
+    <div><small>依頼主からの信用</small><strong id="trust">60 / 100</strong><span>TRUST</span></div>
+    <div><small>残り調査時間</small><strong id="time">10分</strong><span>TIME LEFT</span></div>
+  </div>
+</header>
+
+<div class="workspace">
+<section class="screen case-screen" data-screen="case">
+  <article class="case-file">
+    <div class="case-number"><small>CASE</small><strong id="caseNo">01</strong></div>
+    <div class="case-copy">
+      <p class="chapter" id="chapterLabel">CHAPTER I</p>
+      <h2 id="caseTitle">読み込み中...</h2>
+      <p class="location-line" id="locationLine">今夜の事件は、監査室で起きている。</p>
+      <p class="case-story" id="caseStory"></p>
+      <p class="deadline">夜明けまでに、調べる証拠と報告内容を選んでください。</p>
+    </div>
+    <div class="case-photo" aria-hidden="true"><div class="photo-moon"></div><div class="photo-desk"></div><div class="handwrite">数字は、黙っているとは限らない。</div></div>
+  </article>
+  <div class="overview-board">
+    <div class="evidence-preview">
+      <h3>証拠・資料 <span>EVIDENCE FILES</span></h3>
+      <div class="preview-files">
+        <div><b>領収書</b><span>金額と日付を照合</span></div>
+        <div><b>取引明細</b><span>記録の流れを追跡</span></div>
+        <div><b>社内連絡</b><span>承認と連絡を確認</span></div>
+      </div>
+    </div>
+    <div class="case-note"><small>監査官メモ</small><p id="caseNote">先入観ではなく、証拠の食い違いを探す。</p></div>
+  </div>
+</section>
+
+<section class="screen evidence-screen" data-screen="evidence" hidden>
+  <div class="screen-title"><span>02</span><div><small>EVIDENCE DESK</small><h2>証拠・資料を調べる</h2></div></div>
+  <div class="timer"><strong id="timerTitle">残り10分</strong><progress id="timerBar" max="10" value="10"></progress><span>確認できる証拠は最大2種類です。</span></div>
+  <div id="sources" class="source-grid"></div>
+  <div class="evidence-desk"><h3>今夜の証拠ファイル</h3><div id="findings" class="finding-grid"></div></div>
+</section>
+
+<section class="screen decision-screen" data-screen="decision" hidden>
+  <div class="screen-title"><span>03</span><div><small>MAKE A JUDGMENT</small><h2>あなたの判断を報告する</h2></div></div>
+  <p class="decision-copy">疑いだけでは報告できない。証拠と違和感を整理し、最後はあなたが決める。</p>
+  <div id="choices" class="choice-grid"></div>
+  <p id="warning" class="warning" role="status"></p>
+</section>
+
+<section class="screen result-screen" data-screen="result" hidden>
+  <div class="screen-title"><span>04</span><div><small>RESULT</small><h2>監査結果</h2></div></div>
+  <div id="result"><p class="muted">報告後、ここに結果が記録されます。</p></div>
+  <button id="nextCase" class="next" type="button" hidden>次の案件へ進む</button>
+</section>
+
+<section class="screen save-screen" data-screen="save" hidden>
+  <div class="screen-title"><span>05</span><div><small>RECORD / SAVE</small><h2>監査記録とセーブ</h2></div></div>
+  <div id="history" class="history"></div>
+  <div class="save-actions">
+    <button id="export" type="button">セーブを書き出す</button>
+    <button id="import" type="button">セーブを読み込む</button>
+    <button id="reset" class="danger" type="button">最初から始める</button>
+    <input id="savefile" type="file" accept=".json,application/json" hidden>
+  </div>
+</section>
+</div>
+
+<nav id="operationTabs" class="operation-tabs" aria-label="ゲーム画面">
+  <button type="button" data-tab="case" aria-selected="true"><b>▰</b><span>案件<small>CASE</small></span></button>
+  <button type="button" data-tab="evidence"><b>⌕</b><span>証拠・資料<small>EVIDENCE</small></span></button>
+  <button type="button" data-tab="decision"><b>▤</b><span>監査報告<small>REPORT</small></span></button>
+  <button type="button" data-tab="result"><b>▥</b><span>結果<small>RESULT</small></span></button>
+  <button type="button" data-tab="save"><b>▣</b><span>記録・セーブ<small>SAVE</small></span></button>
+</nav>
+
+<footer>本作の案件・会社・人物はすべて架空です。実際の監査・会計・法務判断には使用しないでください。</footer>
+</main>
+</body></html>
