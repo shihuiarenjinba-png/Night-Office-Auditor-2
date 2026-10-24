@@ -8,6 +8,7 @@
 <script defer src="./src/case-proofbook.js"></script>
 <script defer src="./src/engine.js"></script>
 <script defer src="./src/paid-questions.js"></script>
+<script defer src="./src/paid-witnesses.js"></script>
 <script defer src="./src/app.js"></script>
 <script defer src="./src/operation-tabs.js"></script>
 </head>
@@ -52,6 +53,13 @@
     </div>
     <div class="case-note"><small>監査官メモ</small><p id="caseNote">先入観ではなく、証拠の食い違いを探す。</p></div>
   </div>
+  <section class="witness-panel" id="witnessPanel">
+    <p class="witness-kicker">監査室の会話</p>
+    <h3 id="witnessName">関係者の証言を確かめる</h3>
+    <p id="witnessContext">相手の説明を聞く前に、何を知りたいか考えよう。</p>
+    <div id="witnessChoices" class="witness-choices"></div>
+    <p id="witnessReply" aria-live="polite"></p>
+  </section>
 </section>
 
 <section class="screen evidence-screen" data-screen="evidence" hidden>
