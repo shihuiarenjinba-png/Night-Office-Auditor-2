@@ -55,7 +55,7 @@ function evaluate(raw){
  return {version:VERSION,caseId:CASE_ID,actions:raw.actions.map(a=>({...a})),cards:CARDS.map(c=>({...c,revealed:reveals.has(c.id),matched:PAIRS.some(p=>matches.has(p.id)&&p.cards.includes(c.id))})),
   questions:resolved,progress:completion,total:3,opened:reveals.size,wrong,verdict,ending,latest,hints,suggestions,
   lastDialogue:latest?.kind==="match"?PAIRS.find(p=>p.id===latest.id):null,
-  finalReason:"PO-044 と EVT-044 の対応、発注20:48に先立つ承認20:25、規程第3条と金城玲子の電子署名を組み合わせることで、発注前の正式な代理承認を立証できる。"};
+  finalReason:"PO-044 と EVT-044 の対応、発注20:48の23分前にあたる承認20:25、規程第3条と金城玲子の電子署名を組み合わせることで、発注前の正式な代理承認を立証できる。"};
 }
 const view=raw=>evaluate(raw);
 function apply(raw,action){
