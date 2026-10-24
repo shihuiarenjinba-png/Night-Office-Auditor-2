@@ -17,7 +17,7 @@
   <h1>深夜監査室 <span>CASE 04</span></h1>
   <p class="summary">42万円の発注書に、承認者の署名がない。これは無断発注なのか？</p>
  </div>
- <div class="case-status"><small>解明した疑問</small><strong id="progress">0 / 3</strong><span>失敗しても証拠は消えません</span></div>
+ <div class="case-status"><small>証拠を開ける枠</small><strong id="budget">0 / 6</strong><span id="budgetHint">全8枚から6枚まで</span></div>
 </header>
 <section class="opening">
  <p class="opening-label">事件の始まり</p>
@@ -31,14 +31,15 @@
 </nav>
 <section class="questions" aria-label="解決したい疑問">
  <div class="section-head"><h2>解決するために、まだ分からないこと</h2><span id="remaining">未解明 3件</span></div>
+ <p class="investigation-brief">資料は<span id="cardCount">8</span>枚。めくれるのは<span id="cardLimit">6</span>枚まで。<strong>どの疑問を解くのに何の資料が必要か</strong>、タイトルを見て選んでください。</p>
  <div id="questions" class="question-list"></div>
 </section>
 <section data-screen="board" class="screen" aria-label="証拠カード">
- <div class="section-head"><h2>資料をめくって、関連する2枚をつなぐ</h2><small>番号や日時を見比べよう</small></div>
- <p class="howto"><b>遊び方</b>：カードを押すと中身が開き、そのカードを選択します。関連する2枚を選んで「証拠を関連付ける」を押すだけです。<strong>外れてもカードは戻らず、減点や運要素はありません。</strong></p>
+ <div class="section-head"><h2>資料を選んでめくる</h2><small>解明 <span id="progress">0 / 3</span></small></div>
+ <p class="howto"><b>遊び方</b>：全8枚から最大6枚を選んでめくります。<strong>資料名はすべて見える</strong>ので、解決する疑問に合うものを選びましょう。開いた資料は残り、2枚の関連付けは何度試しても枠を消費しません。<strong>枠を使い切っても「追加調査」として事件を締められます。</strong></p>
  <div id="cards" class="cards"></div>
  <div class="controls">
-  <div><strong id="selectedCount">選択中 0 / 2</strong><p id="instruction">気になるカードをめくりましょう。</p></div>
+  <div><strong id="selectedCount">選択中 0 / 2</strong><p id="instruction">解きたい疑問から、資料名を見て選びましょう。</p></div>
   <div class="control-buttons">
    <button type="button" id="hint" class="secondary">迷ったらヒント</button>
    <button type="button" id="clearSelection" class="secondary">選択解除</button>
@@ -56,11 +57,11 @@
 </section>
 <section data-screen="report" class="screen" hidden aria-label="監査報告">
  <div class="section-head"><h2>証拠がそろったら、結論を報告</h2></div>
- <p id="reportGuide" class="howto">まだ資料の関連付けが終わっていません。</p>
+ <p id="reportGuide" class="howto">3つの疑問をすべて解明できれば断定できます。証拠が足りなければ「追加調査」を選べます。</p>
  <div id="reportOptions" class="report-options">
-  <button type="button" data-verdict="clear" disabled><b>問題なし</b><span>正式な承認を確認できたと報告</span></button>
-  <button type="button" data-verdict="review" disabled><b>再調査</b><span>根拠が不十分として保留する</span></button>
-  <button type="button" data-verdict="escalate" disabled><b>問題あり</b><span>無断発注として報告する</span></button>
+  <button type="button" data-verdict="clear" disabled><b>問題なし</b><span>3つの疑問をすべて解決してから断定</span></button>
+  <button type="button" data-verdict="review"><b>追加調査</b><span>不明点を記録し、正式な追加資料照会に進む</span></button>
+  <button type="button" data-verdict="escalate" disabled><b>問題あり</b><span>3つの疑問をすべて解決してから断定</span></button>
  </div>
  <div id="finalReport" class="final-report" hidden aria-live="polite"></div>
 </section>
