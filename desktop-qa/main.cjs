@@ -44,6 +44,7 @@ app.whenReady().then(async()=>{
  if(out){
   try{
    fs.mkdirSync(out,{recursive:true});
+   fs.writeFileSync(path.join(out,"WINDOWS_QA_STAGE.txt"),"APP_LOADED "+new Date().toISOString()+"\n");
    const state=await win.webContents.executeJavaScript('({title:document.title,caseCount:document.querySelectorAll(".case-item").length,cardCount:document.querySelectorAll(".evidence-card").length,questions:document.querySelectorAll(".question-status").length,progress:document.getElementById("campaignProgress")?.textContent})');
    if(state.caseCount!==3||state.cardCount!==8||state.questions!==2||!state.title.includes("深夜監査室"))
     throw Error("Unexpected Windows DOM "+JSON.stringify(state));
@@ -60,11 +61,12 @@ app.whenReady().then(async()=>{
    console.log("WINDOWS_PAID_QA_PASS "+JSON.stringify({state,before,after}));
   }catch(e){
    console.error("WINDOWS_PAID_QA_FAIL",e.stack);
+   try{fs.writeFileSync(path.join(out,"WINDOWS_QA_ERROR.txt"),String(e.stack||e));}catch{}
    process.exitCode=1;
   }finally{
    if(win.webContents.debugger.isAttached())win.webContents.debugger.detach();
    win.destroy();app.quit();
   }
  }
-}).catch(e=>{console.error("ELECTRON_START_FAILED",e.stack);app.exit(1);});
+ }).catch(e=>{console.error("ELECTRON_START_FAILED",e.stack);if(out)try{fs.mkdirSync(out,{recursive:true});fs.writeFileSync(path.join(out,"WINDOWS_START_ERROR.txt"),String(e.stack||e));}catch{}app.exit(1);});
 app.on("window-all-closed",()=>app.quit());
