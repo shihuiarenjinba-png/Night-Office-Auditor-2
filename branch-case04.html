@@ -12,7 +12,7 @@
 <div class="city" aria-hidden="true"></div>
 <main class="frame">
 <header class="mast">
- <div><p class="eyebrow">NIGHT OFFICE AUDITOR / BRANCHING DRAMA PROTOTYPE</p><h1>深夜監査室 <small>CASE 04</small></h1><p class="subtitle">白紙の承認欄 — 誰の話を聞くかで、手に入る証拠とその後の関係が変わる。</p></div>
+ <div><p class="eyebrow">NIGHT OFFICE AUDITOR / BRANCHING DRAMA PROTOTYPE</p><h1>深夜監査室 <small>CASE 04</small></h1><p class="subtitle">白紙の承認欄 — 一つの疑問を調べる、人物と証拠の推理ドラマ。</p></div>
  <div class="clock">23:48 <span>BEFORE DAWN</span></div>
 </header>
 <div class="hud">
@@ -26,18 +26,25 @@
  <button type="button" aria-selected="false" data-tab="interview">人物との対話</button>
  <button type="button" aria-selected="false" data-tab="records">証拠・調査手帳</button>
 </nav>
+<section class="investigation-guide" aria-label="調査の進行状況">
+ <div class="guide-question"><small>いま解明すること</small><p id="mainQuestion">この発注は正式なものなのか？</p></div>
+ <div class="guide-progress"><small>集まった証拠のつながり</small><div id="proofSteps" class="proof-steps"></div></div>
+ <div class="guide-next"><small>現在の目的</small><strong id="guideHeading">まず発注番号を調べる</strong><p id="guideNext">誰に話を聞くか選ぶ</p></div>
+</section>
 <section data-screen="scene" class="sheet scene">
  <div class="case-stamp">04</div><p class="chapter">CHAPTER I / NIGHT SHIFT</p>
  <h2>署名のない42万円</h2>
  <p>架空のイベント制作会社。明朝の公演を控えた深夜、追加照明の発注書から承認者の署名が消えていた。</p>
  <p>現場主任は「発注を止めるな」と迫り、経理担当は「責任を押し付けられる」と怯えている。管理部門は『記録を照合するまでは、何も断定できない』とだけ答えた。</p>
- <div class="manila"><strong>今夜、あなたは誰を信用する？</strong><span>発注に問題があったかという事実は変わらない。しかし調査の順番と接し方で、開示される資料も、次の事件で協力してくれる人物も変わる。</span></div>
+ <div class="manila"><strong>最初に何を確認する？</strong><span>発注番号 → 承認の時刻 → 承認者の権限。この3点をつなぐのが目標です。誰にどう話すかで、資料の入手経路と人間関係が変わります。</span></div>
  <button type="button" id="start" class="primary">人物との対話を始める <span>→</span></button>
 </section>
 <section data-screen="interview" class="sheet dialog" hidden>
  <p class="chapter" id="phase">INTERVIEW</p>
  <div class="speaker"><span class="portrait" aria-hidden="true">◈</span><div><small>現在の発言者</small><h2 id="speaker">—</h2></div></div>
  <blockquote id="line"></blockquote>
+ <div id="discovery" class="discovery" hidden aria-live="polite"></div>
+ <p class="choice-label">次に何をする？ <span>選択肢の下に、結果として何が起きるかの見通しを示しています。</span></p>
  <div id="choices" class="choices"></div>
  <div id="ending" class="ending" hidden></div>
 </section>
