@@ -1,6 +1,6 @@
 /* Night Office Auditor Expanded — UI controller. */
 (()=>{"use strict";
-const G=globalThis.NightOfficeGame,$=id=>document.getElementById(id),KEY="night-office-auditor-expanded:save:v2";
+const G=globalThis.NightOfficeGame,$=id=>document.getElementById(id),KEY="night-office-auditor-expanded:save:v3";
 let state=null,lastReport=null,unreadableRaw=null,recoveryBlocked=false,notice="";
 const el=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;};
 function load(){let raw=null;try{raw=localStorage.getItem(KEY);return raw?G.validate(JSON.parse(raw)):G.initial();}catch{unreadableRaw=raw;recoveryBlocked=true;notice="保存記録を確認できません。元データは保持しています。";return G.initial();}}
@@ -13,7 +13,21 @@ function caseView(c){
 function timer(c){const remain=recoveryBlocked||c.complete?0:c.minutesLeft;$("timerTitle").textContent=c.complete?"調査完了":"残り"+remain+"分";$("timerBar").value=remain;}
 function sources(c){const root=$("sources"),found=$("findings");root.replaceChildren();found.replaceChildren();if(recoveryBlocked||c.complete){root.append(el("p",recoveryBlocked?"保存記録の復旧が必要です。":"24件の調査は完了しました。","muted"));return;}for(const source of c.sources){const b=el("button",undefined,source.checked?"source checked":"source");b.type="button";b.disabled=!source.available||recoveryBlocked;b.append(el("strong",source.label),el("span",source.checked?"確認済み":source.available?"調査時間 "+source.cost+"分":"残り時間不足"));b.addEventListener("click",()=>{try{state=G.inspect(state,source.id).state;notice="";persist();render();}catch(e){notice=e.message;render();}});root.append(b);}if(!c.findings.length)found.append(el("p","まだ証拠を開いていません。何を調べるか選んでください。","muted"));for(const f of c.findings){const card=el("div",undefined,"finding");card.append(el("strong",f.title),el("small",f.reliability),el("p",f.detail));found.append(card);}}
 function choices(c){const root=$("choices");root.replaceChildren();if(recoveryBlocked||c.complete){root.append(el("p",recoveryBlocked?"保存記録を復旧してください。":"判断は完了しました。","muted"));return;}const desc={clear:"大きな問題はないと報告する。",review:"さらに確認が必要だと報告する。",escalate:"不正や重大な誤りの可能性が高いと報告する。"};for(const q of c.choices){const b=el("button",undefined,"choice");b.type="button";b.dataset.choice=q.id;b.append(el("strong",q.label),el("span",desc[q.id]));b.addEventListener("click",()=>{if(q.id==="escalate"&&!state.active.checked.length&&!confirm("証拠を未確認のまま「問題あり」と報告しますか？"))return;try{const out=G.decide(state,q.id);state=out.state;lastReport=out.report;notice=out.report.correct?"判断を記録しました。":"判断を記録しました。次の案件で証拠を見直しましょう。";persist();render();globalThis.OperationTabs?.open("result",{sound:true});}catch(e){notice=e.message;render();}});root.append(b);}}
-function result(){const root=$("result");root.replaceChildren();if(!lastReport){root.append(el("p",state.history.length?"直近の判定は保存されています。記録・セーブ画面で確認できます。":"報告後、ここに今回の判断結果が表示されます。","muted"));$("nextCase").hidden=true;return;}const r=lastReport,card=el("div",undefined,"result-card"),metrics=el("div",undefined,"result-metrics");for(const [name,val] of [["今回の評価点",(r.scoreDelta>=0?"+":"")+r.scoreDelta],["信用の変化",(r.trustDelta>=0?"+":"")+r.trustDelta]]){const d=el("div");d.append(el("small",name),el("strong",val));metrics.append(d);}card.append(el("h3",r.caseNumber+"件目「"+r.title+"」"),el("p",r.location),metrics,el("p","あなたの報告："+r.judgment),el("p","実際の記録："+r.actual),el("p",r.message,r.correct?"good":"bad"),el("p","決め手："+r.keyFinding,"muted"));root.append(card);$("nextCase").hidden=state.complete||recoveryBlocked;}
+function result(){const root=$("result");root.replaceChildren();if(!lastReport){root.append(el("p",state.history.length?"直近の判定は保存されています。記録・セーブ画面で確認できます。":"報告後、ここに今回の判断結果が表示されます。","muted"));$("nextCase").hidden=true;return;}const r=lastReport,card=el("div",undefined,"result-card"),metrics=el("div",undefined,"result-metrics");for(const [name,val] of [["今回の評価点",(r.scoreDelta>=0?"+":"")+r.scoreDelta],["信用の変化",(r.trustDelta>=0?"+":"")+r.trustDelta]]){const d=el("div");d.append(el("small",name),el("strong",val));metrics.append(d);}card.append(el("h3",r.caseNumber+"件目「"+r.title+"」"),el("p",r.location),metrics,
+ el("p","あなたの報告："+r.judgment),el("p","資料照合後の判定："+r.actual),
+ el("p",r.message,r.correct&&r.supported?"good":"bad"));
+ const review=el("section",undefined,"proof-review");
+ review.append(el("h4","監査室による報告後の照合"));
+ review.append(el("p","報告後に3種類の原始資料を再照合した結果です。調査していない資料は報告前に知り得た情報として扱いません。","muted"));
+ for(const doc of r.postReviewDocuments){
+  const item=el("div",undefined,"proof-document");
+  item.append(el("strong",doc.id+" / "+doc.title),el("span",doc.reviewed?"報告前に確認済み":"報告後に開示"),el("p",doc.detail));
+  review.append(item);
+ }
+ review.append(el("h4","資料から導ける結論"),el("p",r.proofExplanation),
+  el("h4","別の説明を退ける理由"),el("p",r.alternative),
+  el("h4","断定してはいけないこと"),el("p",r.attributionLimits));
+ card.append(review);root.append(card);$("nextCase").hidden=state.complete||recoveryBlocked;}
 function history(){const root=$("history");root.replaceChildren();if(!state.history.length){root.append(el("p","まだ監査記録はありません。","muted"));return;}for(const h of state.history.slice(-12).reverse()){const c=G.CHOICES.find(x=>x.id===h.choice),a=G.CHOICES[h.truth],row=el("div",(h.index+1)+"件目 ｜ "+c.label+" / 実際："+a.label+" ｜ 評価 "+(h.scoreDelta>=0?"+":"")+h.scoreDelta,"history-row");root.append(row);}}
 function render(){const c=G.current(state);stats(c);caseView(c);timer(c);sources(c);choices(c);result();history();$("warning").textContent=notice;}
 function download(name,raw){const url=URL.createObjectURL(new Blob([raw],{type:"application/json"})),a=el("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
