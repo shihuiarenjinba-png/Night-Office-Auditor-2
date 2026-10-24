@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - work/three-case-deduction-20261024
+      - work/three-case-release-polish-20261024
     paths:
       - 'deduction-campaign.html'
       - 'deduction-campaign.css'
