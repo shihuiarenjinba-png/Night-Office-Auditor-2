@@ -3,11 +3,18 @@ on:
   push:
     branches:
       - work/three-case-release-polish-20261024
+      - work/paid-24case-integration-20261024
     paths:
       - 'desktop-qa/**'
       - 'deduction-campaign.html'
       - 'deduction-campaign.css'
       - 'src/deduction-campaign*.js'
+      - 'src/paid-questions.js'
+      - 'src/app.js'
+      - 'src/engine.js'
+      - 'src/case-proofbook.js'
+      - 'index.html'
+      - 'styles.css'
       - '.github/workflows/windows-paid-preview-qa.yml'
   workflow_dispatch:
 permissions:
