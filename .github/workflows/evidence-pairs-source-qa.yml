@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - work/case04-evidence-matching-20261024
+      - work/case04-card-budget-20261024
   workflow_dispatch:
 permissions:
   contents: read
