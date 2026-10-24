@@ -148,10 +148,13 @@ function evaluate(save){
   "01":{opening:"仲村「記録の欠番は、消去の証明ではありません。何が残っているか見てください」",
     proven:"仲村「取消番号を追ってくれて助かりました。次の相談が来ても、先入観なしで見られそうです」",
     weak:"島袋「断定しなかったのはいい。ただ今夜の処理を説明する資料は、もう一度確認してほしい」"},
-  "04":{opening:previous01?"仲村「前の事件では紙の一覧だけで判断しなかった。今回も電子側を探しましょう」":"島袋「紙の空欄を見た時点で、まだ無断発注とは決められません」",
+  "04":{opening:previous01?
+     (runs.get("01").approach==="cooperate"?"仲村「前回は落ち着いて記録を確認してくれました。今回は電子台帳も一緒に調べましょう」":"仲村「前回の強い追及を覚えています。今回は書類による照会を先にお願いします」"):
+     "島袋「紙の空欄を見た時点で、まだ無断発注とは決められません」",
     proven:"島袋「止めるなとしか言えなかった。でも記録で説明できたなら、現場も納得できます」",
     weak:"仲村「紙の署名だけで決めつけたら、現場と経理はまた対立します。追加照会を」"},
-  "05":{opening:prior04?"仲村「前回は記録を照合して疑いが解けました。でも今回は取引先自身が否定している…」":
+  "05":{opening:prior04?
+    (runs.get("04").approach==="cooperate"?"仲村「電子承認を一緒に調べたからこそ、今回は取引先の否認を見逃せません」":"島袋「前回は激しく問い詰められた。今回は担当者の証言とログを分けて確認してください」"):
     "島袋「今度は支払先の番号が変わった。前のように相殺や表示差だけで済むのでしょうか」",
     proven:"仲村「ここで送金を止める判断には根拠があります。でも端末名だけで人を責めないでください」",
     weak:"島袋「誰かのせいにする前に、本人確認と元の依頼票をもう一度調べましょう」"}
@@ -166,6 +169,11 @@ function evaluate(save){
    (runs.get("05").opened.has("H")?"T-7の記録と共有端末の引継ぎ票を両方閲覧済み。個人の特定には追加資料が必要。":"T-7という操作端末名を見つけた。誰が使ったかは、まだ分からない。"):"";
   return {caseId:c.id,voice:cfg.opening,follow,tension,callback};
  });
+ const trust=cases.reduce((score,c)=>score+
+  (c.approach==="cooperate"?1:c.approach==="confront"?-1:0)+
+  (c.complete&&c.proved?1:0),0);
+ const teamwork=trust>=4?"関係者と情報を共有できる監査室になった。":trust<=-1?
+  "証拠は残ったが、調査への協力をためらう関係者もいる。": "監査室の協力関係には、まだ修復できる余地がある。";
  const teamRelations=cases.map(c=>({caseId:c.id,approach:c.approach||"undecided",
     cooperation:c.approach==="cooperate"?"対話を維持":c.approach==="confront"?"慎重な対応が必要":"未接触"}));
 
@@ -175,11 +183,11 @@ function evaluate(save){
    case5.opened.has("G")?"操作ログにはT-7が出るが、個人を特定する独立資料はまだない。":
    "口座を変更した自然人について、現時点で資料を確保していない。";
 
- return {cases:cases.map((c,i)=>({...c,story:stories[i]})),teamRelations,completed,finale,unlocked:completed>0||cases[0].complete?["01","04","05"]:["01"],
+ return {cases:cases.map((c,i)=>({...c,story:stories[i]})),teamRelations,trust,teamwork,completed,finale,unlocked:completed>0||cases[0].complete?["01","04","05"]:["01"],
   ...(finale?{finalReport:finale==="accuse_all"?
     "3事件すべてを同一犯の犯行と断定したが、そのような独立した証拠は存在しない。監査報告の信用を失った。":
     finale==="limited"?"結論を保留して追加照会を選んだ。誤告発を避けたが、今夜の調査は未完了となった。":
-    "1件目は取消記録、4件目は電子承認、5件目は無承認の口座変更という重大な不一致。共通の『不明な記録』でも、それぞれ根拠と結論が異なる。" + attributionNotice + "この範囲だけを報告した。"}:{})};
+    "1件目は取消記録、4件目は電子承認、5件目は無承認の口座変更という重大な不一致。共通の『不明な記録』でも、それぞれ根拠と結論が異なる。" + attributionNotice + "この範囲だけを報告した。" + teamwork"}:{})};
 }
 
 function view(save){
