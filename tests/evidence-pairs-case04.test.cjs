@@ -3,8 +3,8 @@ const test=require("node:test"),assert=require("node:assert/strict"),fs=require(
 const G=require("../src/evidence-pairs-case04.js");
 const reveal=(s,id)=>G.apply(s,{type:"reveal",id});
 const link=(s,a,b)=>G.apply(s,{type:"link",a,b});
-test("six named clues are always available, not randomly assigned",()=>{
- assert.equal(G.CARDS.length,6);assert.equal(G.PAIRS.length,3);
+test("eight named cards are fixed, and just six may be opened",()=>{
+ assert.equal(G.CARDS.length,8);assert.equal(G.PAIRS.length,3);assert.equal(G.CARD_LIMIT,6);
  assert.equal(new Set(G.CARDS.map(c=>c.id)).size,6);
  assert.equal(G.view(G.initial()).progress,0);
  assert.equal(G.view(G.initial()).cards.filter(c=>c.revealed).length,0);
@@ -29,7 +29,7 @@ test("wrong matches do not erase cards, subtract time, or block progress",()=>{
 test("each of three linked pairs resolves precisely one question with a reason",()=>{
  let s=G.initial();
  for(const id of ["A","E","C","F","B","D"])s=reveal(s,id);
- assert.equal(G.view(s).opened,6);
+ assert.equal(G.view(s).opened,6);assert.equal(G.view(s).slotsRemaining,0);assert.throws(()=>reveal(s,"G"),/使い切り/);
  for(const [a,b] of [["D","C"],["A","B"],["F","E"]]){
   s=link(s,a,b);
   const v=G.view(s);
@@ -41,8 +41,8 @@ test("each of three linked pairs resolves precisely one question with a reason",
  assert.throws(()=>link(s,"A","B"),/解明済み/);
 });
 test("report is unavailable until all 3 links are resolved",()=>{
- const s=G.initial();assert.throws(()=>G.apply(s,{type:"report",choice:"clear"}),/関連付け/);
- let a=s;for(const c of G.CARDS)a=reveal(a,c.id);
+ const s=G.initial();assert.throws(()=>G.apply(s,{type:"report",choice:"clear"}),/断定/);
+ let a=s;for(const c of G.CARDS.filter(x=>!["G","H"].includes(x.id)))a=reveal(a,c.id);
  for(const p of G.PAIRS)a=link(a,p.cards[0],p.cards[1]);
  for(const choice of ["clear","review","escalate"]){
   const end=G.apply(a,{type:"report",choice}),v=G.view(end);
@@ -63,7 +63,40 @@ test("standalone UI keeps real tabs and isolated local-save key without remote r
  for(const id of ["board","notes","report"]){assert.ok(html.includes('data-tab="'+id+'"'));assert.ok(html.includes('data-screen="'+id+'"'));}
  for(const id of ["questions","cards","connect","hint","findings","finalReport"]){assert.ok(html.includes('id="'+id+'"'));}
  assert.match(html,/connect-src 'none'/);assert.match(html,/まだ分からないこと/);
- assert.match(js,/night-office-case04-evidence-pairs:v1/);assert.match(js,/AudioContext/);
+ assert.match(js,/night-office-case04-card-budget:v2/);assert.match(js,/AudioContext/);
  assert.doesNotMatch(js,/fetch\(|XMLHttpRequest|sendBeacon/);
  assert.doesNotThrow(()=>new vm.Script(js));
+});
+
+test("extra scene-context cards can consume slots without resolving an authorization question",()=>{
+ let s=G.initial();
+ for(const id of ["A","B","C","D","G","H"])s=reveal(s,id);
+ assert.equal(G.view(s).opened,6);assert.equal(G.view(s).slotsRemaining,0);
+ assert.equal(G.view(s).cards.length,8);
+ assert.equal(G.view(s).cards.filter(x=>!x.revealed).length,2);
+ assert.throws(()=>reveal(s,"E"),/使い切り/);
+ s=link(s,"A","B");s=link(s,"C","D");
+ assert.equal(G.view(s).progress,2);
+ assert.throws(()=>G.apply(s,{type:"report",choice:"clear"}),/断定/);
+ const review=G.apply(s,{type:"report",choice:"review"});
+ assert.equal(G.view(review).verdict,"review");
+ assert.match(G.view(review).ending,/資料|立証/);
+ assert.throws(()=>reveal(review,"E"),/報告後/);
+});
+test("reveal budget is robust to tampered saves",()=>{
+ let s=G.initial();for(const id of ["A","B","C","D","E","F"])s=reveal(s,id);
+ const malicious={...s,actions:[...s.actions,{type:"reveal",id:"G"}]};
+ assert.throws(()=>G.view(malicious),/使い切り/);
+});
+test("a legitimate player can end early by requesting further investigation",()=>{
+ const s=G.apply(G.initial(),{type:"report",choice:"review"});
+ const v=G.view(s);
+ assert.equal(v.progress,0);assert.equal(v.opened,0);assert.equal(v.verdict,"review");
+ assert.match(v.ending,/資料|調査/);
+});
+test("revealing arbitrary contextual cards never changes the predetermined solution",()=>{
+ let s=G.initial();s=reveal(s,"G");s=reveal(s,"H");
+ const v=G.view(s);
+ assert.equal(v.progress,0);assert.equal(v.total,3);
+ assert.equal(v.questions.length,3);assert.match(v.finalReason,/23分前/);
 });
