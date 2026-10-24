@@ -1,0 +1,37 @@
+name: Guided CASE04 browser UI screenshots
+on:
+  push:
+    branches:
+      - work/case04-guided-flow-20261024
+    paths:
+      - 'branch-case04.html'
+      - 'branch-case04.css'
+      - 'src/branch-case04*.js'
+      - 'tests/guided-browser-smoke.cjs'
+      - '.github/workflows/guided-browser-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  guided-browser-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+      - name: Install isolated Chromium test dependency
+        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+      - name: Install Chromium browser
+        run: npx playwright install --with-deps chromium
+      - name: Check actual browser interaction at both Store review resolutions
+        run: node tests/guided-browser-smoke.cjs
+      - name: Upload five UI screenshots and QA record
+        if: ${{ always() && hashFiles('guided-flow-ui-review/**') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: guided-case04-ui-${{ github.sha }}
+          path: guided-flow-ui-review/
+          retention-days: 14
+          if-no-files-found: error
