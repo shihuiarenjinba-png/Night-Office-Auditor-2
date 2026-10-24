@@ -65,7 +65,8 @@ const site=url.pathToFileURL(path.resolve("deduction-campaign.html")).href;
   assert.equal(await p.locator("#finale").isVisible(),true);
   await screenshot("05-final-choice-before-submit.png");
   await p.getByRole("button",{name:/3件それぞれの根拠と未確定点/}).click();
-  assert.match(await p.locator("#finaleResult").innerText(),/T-7/);
+  assert.match(await p.locator("#finaleResult").innerText(),/人物|自然人/);
+  assert.doesNotMatch(await p.locator("#finaleResult").innerText(),/T-7/);
   await screenshot("06-cross-case-ending.png");
 
   // Independent browser context: insufficient evidence review still unlocks next cases.
