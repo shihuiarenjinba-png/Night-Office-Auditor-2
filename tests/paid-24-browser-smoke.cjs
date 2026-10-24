@@ -19,6 +19,12 @@ const output=path.resolve("paid-24-review");fs.mkdirSync(output,{recursive:true}
   const docs=game.SOURCES;
   for(let i=0;i<24;i++){
    assert.equal(await p.locator("#caseNo").innerText(),String(i+1).padStart(2,"0"),"case index should match");
+   assert.equal(await p.locator(".witness-choice").count(),2,"each case should offer character decisions");
+   const response=i%3===1?"press":"careful";
+   await p.locator(".witness-choice").nth(response==="careful"?0:1).click();
+   assert.equal(await p.locator(".witness-choice").count(),0,"interview response should be committed");
+   assert.ok((await p.locator("#witnessReply").innerText()).length>8);
+
    await p.locator('[data-tab="evidence"]').click();
    const required=proof[i].required;
    const complementary=docs.find(x=>!required.includes(x.id)).id;
@@ -41,6 +47,8 @@ const output=path.resolve("paid-24-review");fs.mkdirSync(output,{recursive:true}
    if(i===11){
     await p.reload();
     assert.equal(await p.locator("#count").innerText(),"12 / 24");
+    assert.match(await p.locator("#witnessReply").innerText(),/協力|説明|確認|記録|見せて/);
+
     await p.locator('[data-tab="decision"]').click();
     assert.equal(await p.locator(".document-choice input:checked").count(),2);
     assert.equal(await p.locator('.deduction-option input[value="'+answer+'"]').isChecked(),true);
@@ -55,6 +63,9 @@ const output=path.resolve("paid-24-review");fs.mkdirSync(output,{recursive:true}
   }
   assert.equal(await p.locator("#count").innerText(),"24 / 24");
   assert.match(await p.locator("#caseTitle").innerText(),/監査官|調査員/);
+  assert.match(await p.locator("#witnessContext").innerText(),/関係者と話し合った夜は24回/);
+  assert.match(await p.locator("#witnessReply").innerText(),/仲村|島袋/);
+
   const dump=await p.locator("body").innerText();
   for(const secret of ["QA_UNSIGNED","GitHub Actions","Store Identity","WACK","MSIX","開発工程","残工程"]){
    assert.equal(dump.includes(secret),false,"internal steps leaked to player UI "+secret);
@@ -67,7 +78,7 @@ const output=path.resolve("paid-24-review");fs.mkdirSync(output,{recursive:true}
   await n.screenshot({path:path.join(output,"05-opening-1024.png"),fullPage:true});
   assert.deepEqual(errors,[]);assert.deepEqual(remotes,[]);
   const qa={status:"PASS",casesCompleted:24,sourceDocs:72,finalReportOnlySpoilers:true,notebookReload:true,allFiveTabs:true,devTextHidden:true,
-   screenshots:5,viewports:["1280x720","1024x768"],pageErrors:errors,networkRequests:remotes,
+   witnessInterviews:24,witnessPersistsAcrossReload:true,screenshots:5,viewports:["1280x720","1024x768"],pageErrors:errors,networkRequests:remotes,
    scope:"Chromium complete gameplay; Windows Electron dedicated runtime separately"};
   fs.writeFileSync(path.join(output,"FULL_24_QA.json"),JSON.stringify(qa,null,2)+"\n");
   console.log("FULL24_BROWSER_QA_PASS "+JSON.stringify(qa));
