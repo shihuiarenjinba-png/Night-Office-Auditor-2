@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - work/branching-drama-case04-20261024
+      - work/case04-guided-flow-20261024
   workflow_dispatch:
 permissions:
   contents: read
