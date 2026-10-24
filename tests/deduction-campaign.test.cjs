@@ -105,3 +105,45 @@ test("cross-case final summary cites shared terminal only when the player saw th
  const unseen=G.view(G.apply(state,{type:"final",choice:"distinguish"}));
  assert.doesNotMatch(unseen.finalReport,/T-7/);
 });
+
+test("character choices persist across cases, changing future scenes without changing truth",()=>{
+ let cooperative=solve(G.initial(),"01");
+ let confront=G.initial();
+ confront=G.apply(confront,{type:"approach",caseId:"01",choice:"confront"});
+ confront=G.apply(confront,{type:"report",caseId:"01",choice:"review"});
+ const a=G.view(cooperative),b=G.view(confront);
+ assert.notEqual(a.cases[1].story.voice,b.cases[1].story.voice);
+ assert.match(a.cases[1].story.voice,/前回|一緒/);
+ assert.match(b.cases[1].story.voice,/前回|追及|照会/);
+ assert.notEqual(a.trust,b.trust);
+ assert.equal(a.cases[1].questions[0].text,b.cases[1].questions[0].text);
+ assert.equal(a.cases[1].questions[0].correctChoice,undefined);
+});
+test("case 05 hidden terminal remains secret until relevant cards are opened",()=>{
+ let s=solve(G.initial(),"01");
+ s=G.apply(s,{type:"approach",caseId:"05",choice:"cooperate"});
+ assert.doesNotMatch(G.view(s).cases[2].story.callback,/T-7/);
+ s=G.apply(s,{type:"open",caseId:"05",cardId:"G"});
+ assert.match(G.view(s).cases[2].story.callback,/T-7/);
+ assert.doesNotMatch(G.view(s).cases[2].story.callback,/複数人/);
+ s=G.apply(s,{type:"open",caseId:"05",cardId:"H"});
+ assert.match(G.view(s).cases[2].story.callback,/複数人/);
+});
+test("final report retains relationship consequences separate from factual case verdict",()=>{
+ let cooperative=solve(solve(solve(G.initial(),"01"),"04"),"05");
+ let adversarial=G.initial();
+ adversarial=G.apply(adversarial,{type:"approach",caseId:"01",choice:"confront"});
+ adversarial=G.apply(adversarial,{type:"report",caseId:"01",choice:"review"});
+ for(const id of ["04","05"]){
+   adversarial=G.apply(adversarial,{type:"approach",caseId:id,choice:"confront"});
+   adversarial=G.apply(adversarial,{type:"report",caseId:id,choice:"review"});
+ }
+ const a=G.view(G.apply(cooperative,{type:"final",choice:"distinguish"}));
+ const b=G.view(G.apply(adversarial,{type:"final",choice:"distinguish"}));
+ assert.ok(a.trust>b.trust);
+ assert.notEqual(a.teamwork,b.teamwork);
+ assert.match(a.finalReport,/口座変更/);
+ assert.match(b.finalReport,/口座変更/);
+ assert.ok(a.finalReport.includes(a.teamwork));
+ assert.ok(b.finalReport.includes(b.teamwork));
+});
