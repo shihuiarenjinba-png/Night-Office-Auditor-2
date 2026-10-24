@@ -40,25 +40,25 @@ app.whenReady().then(async()=>{
    webviewTag:false,allowRunningInsecureContent:false}
  });
  restrict(win);
- await win.loadFile(path.join(__dirname,"deduction-campaign.html"));
+ await win.loadFile(path.join(__dirname,"index.html"));
  await new Promise(resolve=>setTimeout(resolve,900));
  if(out){
   try{
    fs.mkdirSync(out,{recursive:true});
    fs.writeFileSync(path.join(out,"WINDOWS_QA_STAGE.txt"),"APP_LOADED "+new Date().toISOString()+"\n");
-   const state=await win.webContents.executeJavaScript('({title:document.title,caseCount:document.querySelectorAll(".case-item").length,cardCount:document.querySelectorAll(".evidence-card").length,questions:document.querySelectorAll(".question-status").length,progress:document.getElementById("campaignProgress")?.textContent})');
-   if(state.caseCount!==3||state.cardCount!==8||state.questions!==2||!state.title.includes("深夜監査室"))
+   const state=await win.webContents.executeJavaScript('({title:document.title,caseCount:document.getElementById("count")?.textContent,caseNumber:document.getElementById("caseNo")?.textContent,tabCount:document.querySelectorAll("[data-tab]").length,playerScreens:document.querySelectorAll("[data-screen]").length,internalContent:/QA_UNSIGNED|GitHub Actions|Store Identity|WACK|MSIX|開発工程/.test(document.body.innerText)})');
+   if(state.caseCount!=="1 / 24"||state.caseNumber!=="01"||state.tabCount!==5||state.playerScreens!==5||state.internalContent||!state.title.includes("深夜監査室"))
     throw Error("Unexpected Windows DOM "+JSON.stringify(state));
    fs.appendFileSync(path.join(out,"WINDOWS_QA_STAGE.txt"),"DOM_VERIFIED "+JSON.stringify(state)+"\n");
    const before=await screenshot(win,path.join(out,"windows-1280x720.png"),1280,720);
-   const action=await win.webContents.executeJavaScript('(()=>{const btn=document.querySelector(".person-choice");btn.click();return {cardsEnabled:[...document.querySelectorAll(".evidence-card")].every(x=>!x.disabled),dialogue:document.getElementById("storyBeat")?.textContent}})()');
-   if(!action.cardsEnabled||!action.dialogue)throw Error("Windows interaction did not advance stage.");
+   const action=await win.webContents.executeJavaScript('(()=>{document.querySelector("[data-tab=evidence]").click();document.querySelector(".source:not([disabled])").click();return {evidenceVisible:!document.querySelector("[data-screen=evidence]").hidden,findings:document.querySelectorAll(".finding").length,remaining:document.getElementById("timerTitle")?.innerText}})()');
+   if(!action.evidenceVisible||action.findings!==1)throw Error("Windows evidence tab/card did not respond.");
    fs.appendFileSync(path.join(out,"WINDOWS_QA_STAGE.txt"),"FIRST_SCREEN_CAPTURED "+JSON.stringify(before)+"\n");
    const after=await screenshot(win,path.join(out,"windows-1024x768-after-choice.png"),1024,768);
    fs.writeFileSync(path.join(out,"WINDOWS_QA.json"),JSON.stringify({
     status:"PASS",source:"Windows packaged Electron QA preview",appName:app.getName(),
-    title:state.title,caseCount:state.caseCount,firstCaseCards:state.cardCount,
-    questions:state.questions,before,after,interactiveStage:true,
+    title:state.title,caseCount:24,firstCaseEvidenceTypes:3,
+    tabs:state.tabCount,before,after,interactiveEvidence:true,playerUIReleaseTextHidden:true,
     signed:false,storeCandidate:false,wack:false,msix:false
    },null,2)+"\n");
    console.log("WINDOWS_PAID_QA_PASS "+JSON.stringify({state,before,after}));
