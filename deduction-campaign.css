@@ -107,3 +107,10 @@ footer a{color:var(--gold)}
 @media(max-width:750px){.body-grid{grid-template-columns:1fr}.side{position:static}.case-selector{grid-template-columns:repeat(3,minmax(0,1fr))}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.question-summary,.deduction-grid{grid-template-columns:1fr}.overview{grid-template-columns:repeat(2,minmax(0,1fr))}.report-buttons,.finale-choices{grid-template-columns:1fr}.mast{align-items:flex-start}.case-item strong{font-size:12px}}
 @media(max-width:480px){.shell{padding:10px}.mast{flex-direction:column}.case-selector{grid-template-columns:1fr}.cards{grid-template-columns:1fr}.intro{padding:17px}.side,.guide,.investigation,.deductions,.report{padding:12px}.assign-controls select{min-width:100%}footer{flex-direction:column;align-items:flex-start}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* Character beats stay readable on desktop and below the case introduction on mobile. */
+.story-line{background:linear-gradient(110deg,#122b31,#223a39);border:1px solid #806f56;border-left:4px solid #d5ab75;padding:12px 14px;margin-top:13px;color:#f7e9d5}
+.story-line span{font:10px Georgia,serif;letter-spacing:.13em;color:#dbb982}
+.story-line p{font-family:"Yu Mincho",serif;font-size:14px;line-height:1.8;margin:5px 0}
+.story-line #teamConsequence{color:#cddfd3;font-family:inherit;font-size:11px}
+@media(max-width:750px){.story-line{padding:10px}}
