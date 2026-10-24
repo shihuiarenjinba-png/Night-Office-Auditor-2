@@ -1,0 +1,36 @@
+name: Evidence card game browser screenshots
+on:
+  push:
+    branches:
+      - work/case04-evidence-matching-20261024
+    paths:
+      - 'evidence-pairs-case04.*'
+      - 'src/evidence-pairs-case04*.js'
+      - 'tests/evidence-pairs-browser-smoke.cjs'
+      - '.github/workflows/evidence-pairs-browser-review.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+      - name: Install isolated browser test dependency
+        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Test actual gameplay and capture screenshots
+        run: node tests/evidence-pairs-browser-smoke.cjs
+      - name: Upload real browser screens
+        if: ${{ always() && hashFiles('evidence-pairs-ui-review/**') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: case04-evidence-pairs-ui-${{ github.sha }}
+          path: evidence-pairs-ui-review/
+          retention-days: 14
+          if-no-files-found: error
