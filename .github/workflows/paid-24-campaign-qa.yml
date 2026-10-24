@@ -1,0 +1,41 @@
+name: Paid 24-case source and gameplay QA
+on:
+  push:
+    branches:
+      - work/paid-24case-integration-20261024
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Execute all paid game tests and regression
+        run: npm test
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install pinned automated browser
+        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+      - name: Install Chromium browser
+        run: npx playwright install --with-deps chromium
+      - name: Play all 24 cases, save/restore and capture screens
+        run: node tests/paid-24-browser-smoke.cjs
+      - name: Upload complete campaign QA screenshots and record
+        if: ${{ always() && hashFiles('paid-24-review/**') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: paid-24-complete-gameplay-${{ github.sha }}
+          path: paid-24-review/
+          retention-days: 14
+          if-no-files-found: error
