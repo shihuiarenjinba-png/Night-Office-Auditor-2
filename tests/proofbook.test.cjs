@@ -36,7 +36,7 @@ test("inspection exposes exactly the selected case document, not hidden conclusi
 test("post-judgment report traces evidence, flags uninspected records, avoids unsupported personal blame",()=>{
  let s=G.initial(24680);const p=book[23];
  for(let i=0;i<23;i++)s=G.decide(s,"review").state;
- let chosen=[p.primary,...G.SOURCES.map(q=>q.id).filter(id=>id!==p.primary).slice(0,1)];
+ const chosen=[...p.required];
  s=G.inspect(s,chosen[0]).state;s=G.inspect(s,chosen[1]).state;
  const out=G.decide(s,G.CHOICES[p.verdict].id),r=out.report;
  assert.equal(r.supported,true);assert.equal(r.actual,"問題あり と判断する");
@@ -58,4 +58,13 @@ test("new save schema stays distinct from the old prototype",()=>{
  const cur=G.initial();
  assert.equal(G.validate(cur).version,3);
  assert.throws(()=>G.validate({...cur,version:2}),/セーブ形式/);
+});
+
+test("finale cannot attribute personal action on a system log alone",()=>{
+ const p=book[23];assert.deepEqual(p.required,["timeline","approval"]);
+ let s=G.initial(24680);for(let i=0;i<23;i++)s=G.decide(s,"review").state;
+ s=G.inspect(s,"timeline").state;s=G.inspect(s,"ledger").state;
+ const r=G.decide(s,"escalate").report;
+ assert.equal(r.correct,true);assert.equal(r.supported,false);
+ assert.match(r.message,/裏付けが不十分/);
 });
