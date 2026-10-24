@@ -14,6 +14,6 @@ test("tabs synthesize an optional local sound and contain no network calls",()=>
  assert.doesNotMatch(tabs,/fetch\(|XMLHttpRequest|sendBeacon/);assert.doesNotThrow(()=>new vm.Script(tabs));
 });
 test("renderer uses isolated expanded save key and no network calls",()=>{
- assert.match(app,/night-office-auditor-expanded:save:v2/);assert.doesNotMatch(app,/fetch\(|XMLHttpRequest|sendBeacon/);
+ assert.match(app,/night-office-auditor-expanded:save:v3/);assert.doesNotMatch(app,/fetch\(|XMLHttpRequest|sendBeacon/);
 });
 test("CSP blocks network access",()=>{assert.match(html,/connect-src 'none'/);assert.doesNotMatch(html,/<script[^>]+src="https?:/);});
