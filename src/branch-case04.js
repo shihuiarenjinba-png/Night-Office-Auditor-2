@@ -107,6 +107,38 @@
    if(o.id==="formal_copy"&&s.minutes<4)return false;
    return true;
  });}
+ const NOTES=Object.freeze({
+   sheet:{title:"発注台帳 N04-L を入手",text:"紙は無署名ですが、同じ発注に電子承認ID EVT-044 が付いています。番号の存在だけでは承認済みと断定できません。",next:"次は EVT-044 の処理時刻を確認"},
+   system:{title:"署名ログ N04-T を入手",text:"EVT-044 は正式発注の23分前。後から承認を付け足した記録もありません。",next:"次は署名者の代理権限を確認"},
+   policy:{title:"代理承認規程 N04-A を入手",text:"社内規程と金城の電子署名が同じ承認IDに一致。ここまでの資料なら、正規承認として説明できます。",next:"3つの証拠を見直して監査報告へ"}
+ });
+ function guidance(s){
+   const count=s.documents.length;
+   const stage=s.stage;
+   const heading=stage==="finished"?"判断が現場に残した結果":
+     stage==="verdict"?"調べた事実をもとに報告する":
+     stage==="policy"?"最後の疑問：その承認に権限はあるか":
+     stage==="trace"?"次の疑問：承認は本当に発注より前か":
+     stage==="confrontation"?"先に告発したため調査への協力が減った":
+     stage==="accounts"?"発注書の原本と電子承認IDを確認する":
+     stage==="site"?"現場が急ぐ理由を聞き、発注番号を得る":
+     "最初の疑問：署名が空欄なら無断発注なのか";
+   let next=stage==="intro"?"まず現場か経理の担当者に話を聞き、発注番号を確かめる":
+     stage==="site"?"現場の事情を聞くか、責任を追及するかを選ぶ":
+     stage==="accounts"?"紙の原本を入手する。拒否されたら正式な文書請求も可能":
+     stage==="confrontation"?"告発を取り下げて調査するか、根拠なしで報告するかを決める":
+     stage==="trace"?"発注番号と電子承認IDの処理時刻を照合する":
+     stage==="policy"?"最後に代理承認規程と本人の電子署名を照合する":
+     stage==="verdict"?(count===3?"3つの資料がそろった。結論を出せる状態です":"根拠が足りなければ『再調査』も選べます"):
+     "事件の事実と、あなたが失った／築いた信頼を確認する";
+   const states=[
+    {label:"発注台帳",ready:s.documents.includes("sheet")},
+    {label:"操作時刻",ready:s.documents.includes("system")},
+    {label:"承認権限",ready:s.documents.includes("policy")}
+   ];
+   const latest=s.documents.length?NOTES[s.documents[s.documents.length-1]]:null;
+   return {heading,next,milestones:states,latest,caseQuestion:"42万円の発注は、責任者の署名がなくても正式に承認されていたのか？",isFinal:stage==="finished"};
+ }
  function view(raw){
   const p=replay(raw),optionsHere=available(p);
   const access=p.documents.map(id=>documents[id]);
@@ -118,7 +150,7 @@
     "判断は偶然正しかったが、監査品質への疑義が残る。";
   return {stage:p.stage,speaker:lines[p.stage].speaker,line:lines[p.stage].line,actions:optionsHere,people,
    documents:access,history:p.events,minutes:p.minutes,staff:p.staff,pressure:p.pressure,ending,
-   epilogue:next,proven:["sheet","system","policy"].every(id=>p.documents.includes(id))};
+   epilogue:next,guidance:guidance(p),proven:["sheet","system","policy"].every(id=>p.documents.includes(id))};
  }
  function choose(raw,id){const p=replay(raw);if(!available(p).some(o=>o.id===id))throw Error("現在は選べない行動です。");const next={version:VERSION,caseId:ID,actions:[...raw.actions,id]};replay(next);return next;}
  return Object.freeze({VERSION,ID,people,documents,initial,replay,view,choose});
