@@ -136,8 +136,21 @@
     {label:"操作時刻",ready:s.documents.includes("system")},
     {label:"承認権限",ready:s.documents.includes("policy")}
    ];
+   const known=[
+     "追加照明の発注額は42万円。",
+     "紙の発注書の最終承認欄には署名がない。",
+     "公演は明朝。経理と現場は対応を巡って対立している。"
+   ];
+   if(s.documents.includes("sheet"))known.push("発注台帳には PO-044 と電子承認ID EVT-044 の対応が記録されている。");
+   if(s.documents.includes("system"))known.push("署名ログには、発注23分前の承認処理が残っている。");
+   if(s.documents.includes("policy"))known.push("承認者の電子署名と、社内の代理承認規程が一致した。");
+   const unknowns=[
+     {id:"sheet",question:"紙の署名がなくても、別に承認記録が存在するのか？",answer:"発注台帳で電子承認ID EVT-044 を確認。まだ有効な承認かは分からない。"},
+     {id:"system",question:"承認処理は発注前だったのか？ 後から書き換えられていないか？",answer:"署名ログを照合。発注23分前に処理され、後付け変更の履歴はない。"},
+     {id:"policy",question:"署名した人には、正式に代理承認する権限があったのか？",answer:"代理承認規程第3条と電子署名が一致。承認権限を確認した。"}
+   ].map(item=>({...item,resolved:s.documents.includes(item.id)}));
    const latest=s.documents.length?NOTES[s.documents[s.documents.length-1]]:null;
-   return {heading,next,milestones:states,latest,caseQuestion:"42万円の発注は、責任者の署名がなくても正式に承認されていたのか？",isFinal:stage==="finished"};
+   return {heading,next,milestones:states,latest,known,unknowns,caseQuestion:"42万円の発注は、責任者の署名がなくても正式に承認されていたのか？",isFinal:stage==="finished"};
  }
  function view(raw){
   const p=replay(raw),optionsHere=available(p);
