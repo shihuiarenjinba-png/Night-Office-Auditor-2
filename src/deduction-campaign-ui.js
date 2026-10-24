@@ -62,6 +62,7 @@ function final(choice){
 function render(){
  const v=G.view(save),c=v.cases.find(x=>x.id===current);
  $("campaignProgress").textContent=v.completed+" / 3";
+ $("teamStatus").textContent="関係指数 "+v.trust+"｜"+v.teamwork;
  const nav=$("caseSelector");nav.replaceChildren();
  for(const item of v.cases){
   const allowed=v.unlocked.includes(item.id);
