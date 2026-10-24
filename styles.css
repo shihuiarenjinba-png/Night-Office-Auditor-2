@@ -28,3 +28,15 @@
 .evidence-desk .finding{line-height:1.75}
 @media(max-width:1024px){.deduction-panel{padding:14px}.choice-grid{grid-template-columns:1fr}.deduction-panel h3{font-size:21px}}
 @media(max-width:560px){.document-choice{font-size:12px}.deduction-panel h3{font-size:19px}}
+
+.witness-panel{padding:16px 21px;margin:14px 0;background:linear-gradient(105deg,#123138,#172932);border:1px solid #8b7756;border-left:4px solid #d7ae73;box-shadow:0 8px 20px #0004}
+.witness-panel[hidden]{display:none}
+.witness-kicker{font:11px Georgia,serif;letter-spacing:.18em;color:#e9c494;margin:0 0 4px}
+.witness-panel h3{font:20px "Yu Mincho",serif;margin:6px 0;color:#efddbc}
+.witness-panel p{font-size:13px;line-height:1.75;margin:7px 0}
+#witnessContext{color:#bed4cb}
+#witnessReply{font-family:"Yu Mincho",serif;font-size:15px;color:#f4e3bd}
+.witness-choices{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 5px}
+.witness-choice{background:#334e44;color:#f8eed9;border:1px solid #b0aa7e;padding:10px 14px;font-size:12px;min-height:44px}
+.witness-choice:hover{background:#426454}
+@media(max-width:720px){.witness-panel{padding:12px}.witness-choices{flex-direction:column}}
