@@ -40,3 +40,9 @@
 .witness-choice{background:#334e44;color:#f8eed9;border:1px solid #b0aa7e;padding:10px 14px;font-size:12px;min-height:44px}
 .witness-choice:hover{background:#426454}
 @media(max-width:720px){.witness-panel{padding:12px}.witness-choices{flex-direction:column}}
+
+/* Keep documentary source labels visually separated on compact screens. */
+.finding strong,.finding small{display:block}
+.finding small{font-size:10px;margin-top:5px;color:#6a5943;letter-spacing:.03em}
+.finding p{margin-top:8px}
+.witness-panel{margin:12px 0}
