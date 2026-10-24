@@ -251,7 +251,7 @@
 ];
  return Object.freeze(rows.map(([verdict,primary,ledger,timeline,approval,conclusion,alternative,limits],i)=>{
   const code="N"+String(i+1).padStart(2,"0");
-  return Object.freeze({code,verdict,primary,required:index===23?Object.freeze(["timeline","approval"]):Object.freeze([primary]),
+  return Object.freeze({code,verdict,primary,required:i===23?Object.freeze(["timeline","approval"]):Object.freeze([primary]),
    evidence:Object.freeze({
     ledger:Object.freeze({id:code+"-L",detail:ledger}),
     timeline:Object.freeze({id:code+"-T",detail:timeline}),
