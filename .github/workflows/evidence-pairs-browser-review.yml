@@ -4,6 +4,7 @@ on:
     branches:
       - work/case04-evidence-matching-20261024
       - work/case04-card-budget-20261024
+      - work/case04-player-deductions-20261024
     paths:
       - 'evidence-pairs-case04.*'
       - 'src/evidence-pairs-case04*.js'
