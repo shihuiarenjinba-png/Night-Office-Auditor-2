@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'self' data:; object-src 'none'; frame-src 'none'; base-uri 'none'">
+<title>深夜監査室 — CASE 04 分岐ドラマ試作</title>
+<link rel="stylesheet" href="./branch-case04.css">
+<script defer src="./src/branch-case04.js"></script>
+<script defer src="./src/branch-case04-ui.js"></script>
+</head>
+<body>
+<div class="city" aria-hidden="true"></div>
+<main class="frame">
+<header class="mast">
+ <div><p class="eyebrow">NIGHT OFFICE AUDITOR / BRANCHING DRAMA PROTOTYPE</p><h1>深夜監査室 <small>CASE 04</small></h1><p class="subtitle">白紙の承認欄 — 誰の話を聞くかで、手に入る証拠とその後の関係が変わる。</p></div>
+ <div class="clock">23:48 <span>BEFORE DAWN</span></div>
+</header>
+<div class="hud">
+ <div><span>残り調査時間</span><strong id="minutes">10分</strong></div>
+ <div><span>経理との関係</span><strong id="nakamura">未接触</strong></div>
+ <div><span>現場との関係</span><strong id="shimabukuro">未接触</strong></div>
+ <div><span>資料の入手</span><strong id="documentCount">0 / 3</strong></div>
+</div>
+<nav aria-label="調査画面" id="tabs" class="tabs">
+ <button type="button" aria-selected="true" data-tab="scene">事件現場</button>
+ <button type="button" aria-selected="false" data-tab="interview">人物との対話</button>
+ <button type="button" aria-selected="false" data-tab="records">証拠・調査手帳</button>
+</nav>
+<section data-screen="scene" class="sheet scene">
+ <div class="case-stamp">04</div><p class="chapter">CHAPTER I / NIGHT SHIFT</p>
+ <h2>署名のない42万円</h2>
+ <p>架空のイベント制作会社。明朝の公演を控えた深夜、追加照明の発注書から承認者の署名が消えていた。</p>
+ <p>現場主任は「発注を止めるな」と迫り、経理担当は「責任を押し付けられる」と怯えている。代理承認者は、記録を確認せず自分の名前を使うことを拒む。</p>
+ <div class="manila"><strong>今夜、あなたは誰を信用する？</strong><span>発注に問題があったかという事実は変わらない。しかし調査の順番と接し方で、開示される資料も、次の事件で協力してくれる人物も変わる。</span></div>
+ <button type="button" id="start" class="primary">人物との対話を始める <span>→</span></button>
+</section>
+<section data-screen="interview" class="sheet dialog" hidden>
+ <p class="chapter" id="phase">INTERVIEW</p>
+ <div class="speaker"><span class="portrait" aria-hidden="true">◈</span><div><small>現在の発言者</small><h2 id="speaker">—</h2></div></div>
+ <blockquote id="line"></blockquote>
+ <div id="choices" class="choices"></div>
+ <div id="ending" class="ending" hidden></div>
+</section>
+<section data-screen="records" class="sheet records" hidden>
+ <h2>開示済みの証拠</h2><p class="hint">未入手の資料は報告前には表示されません。個人の犯行をシステムIDだけで断定しないでください。</p>
+ <div id="documents" class="documents"></div>
+ <h2>調査の経過</h2><div id="history" class="history"></div>
+ <h2>人物ファイル</h2><div id="people" class="people"></div>
+</section>
+<div class="footer"><div><strong>これは分岐機能を試す1案件のプロトタイプです。</strong> 本編24案件の順番やセーブとは独立しています。</div><button type="button" id="reset">この調査を最初からやり直す</button></div>
+<p id="error" class="error" role="status"></p>
+<a class="back" href="./index.html">← 既存の有料版（24案件）を開く</a>
+</main>
+</body></html>
