@@ -1,0 +1,19 @@
+name: Three-case deduction campaign QA
+on:
+  push:
+    branches:
+      - work/three-case-deduction-20261024
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+      - name: Run paid edition tests including three-case deduction campaign
+        run: npm test
