@@ -1,0 +1,82 @@
+name: Windows paid preview QA (UNSIGNED, non-Store)
+on:
+  push:
+    branches:
+      - work/three-case-release-polish-20261024
+    paths:
+      - 'desktop-qa/**'
+      - 'deduction-campaign.html'
+      - 'deduction-campaign.css'
+      - 'src/deduction-campaign*.js'
+      - '.github/workflows/windows-paid-preview-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows-preview:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate source before Windows packaging
+        run: npm test
+      - name: Stage isolated offline QA preview
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force qa-app | Out-Null
+          Copy-Item desktop-qa/main.cjs qa-app/main.cjs
+          Copy-Item -Path *.html,*.css -Destination qa-app -Force
+          Copy-Item -Path src -Destination qa-app/src -Recurse -Force
+          @'
+          {
+            "name": "night-office-paid-qa-unsigned",
+            "version": "0.0.0",
+            "private": true,
+            "description": "UNSIGNED WINDOWS QA PREVIEW ONLY - NOT MSIX OR STORE SUBMISSION",
+            "main": "main.cjs"
+          }
+          '@ | Set-Content -Path qa-app/package.json -Encoding utf8
+      - name: Package Windows x64 without Store identity or certificate
+        shell: pwsh
+        run: |
+          npx --yes @electron/packager@20.3.0 qa-app NightOfficePaid_QA_UNSIGNED --platform=win32 --arch=x64 --electron-version=45.0.0 --out=qa-dist --overwrite
+          if ($LASTEXITCODE -ne 0) { throw "Electron packaging failed" }
+      - name: Launch packaged EXE and capture exact-size Windows UI
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force windows-qa | Out-Null
+          $exe = (Get-ChildItem -Path qa-dist -Filter NightOfficePaid_QA_UNSIGNED.exe -Recurse -File | Select-Object -First 1).FullName
+          if (-not $exe) { throw "Windows EXE missing" }
+          $target = (Resolve-Path windows-qa).Path
+          & $exe "--qa-capture=$target"
+          if ($LASTEXITCODE -ne 0) { throw "Windows packaged app runtime QA failed" }
+          if (-not (Test-Path windows-qa/WINDOWS_QA.json)) { throw "QA record missing" }
+          if (-not (Test-Path windows-qa/windows-1280x720.png)) { throw "1280 screenshot missing" }
+          if (-not (Test-Path windows-qa/windows-1024x768-after-choice.png)) { throw "1024 screenshot missing" }
+      - name: Make reproducible QA artifact with SHA256
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "qa-dist/NightOfficePaid_QA_UNSIGNED-win32-x64/*" -DestinationPath "NightOfficePaid_QA_UNSIGNED_win32_x64.zip" -CompressionLevel Optimal
+          $hash = (Get-FileHash NightOfficePaid_QA_UNSIGNED_win32_x64.zip -Algorithm SHA256).Hash
+          "QA_UNSIGNED_ZIP_SHA256 $hash" | Set-Content windows-qa/BUILD_SHA256.txt
+          "SOURCE_COMMIT ${{ github.sha }}" | Add-Content windows-qa/BUILD_SHA256.txt
+          "Identity NOT ASSIGNED; SIGNATURE NONE; MSIX NOT CREATED; WACK NOT DONE; Store submission HOLD" | Add-Content windows-qa/BUILD_SHA256.txt
+      - name: Upload executed Windows runtime evidence
+        if: ${{ always() && hashFiles('windows-qa/**') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: paid-windows-runtime-QA-${{ github.sha }}
+          path: windows-qa/
+          retention-days: 14
+          if-no-files-found: error
+      - name: Upload unsigned portable Windows preview
+        if: ${{ success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: paid-windows-preview-QA_UNSIGNED-${{ github.sha }}
+          path: NightOfficePaid_QA_UNSIGNED_win32_x64.zip
+          retention-days: 14
+          if-no-files-found: error
