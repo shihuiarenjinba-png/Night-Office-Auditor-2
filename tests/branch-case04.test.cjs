@@ -94,3 +94,36 @@ test("guided UI shows immediate evidence implications, not only a separate noteb
  assert.match(ui,/報告後の事実照合/);
  assert.doesNotMatch(html,/今夜、あなたは誰を信用する/);
 });
+
+test("case starts with known facts and three explicit unanswered questions, not answers",()=>{
+ const v=G.view(G.initial());
+ assert.equal(v.guidance.unknowns.length,3);
+ assert.equal(v.guidance.unknowns.filter(x=>x.resolved).length,0);
+ assert.ok(v.guidance.known.some(x=>/42万円/.test(x)));
+ assert.ok(v.guidance.known.some(x=>/署名.*ない/.test(x)));
+ assert.ok(v.guidance.unknowns.some(x=>/発注前/.test(x.question)));
+ assert.ok(v.guidance.unknowns.some(x=>/権限/.test(x.question)));
+ assert.ok(!v.guidance.known.join(" ").includes("正式な代理承認"));
+});
+test("one unanswered question closes only when its own evidence is acquired",()=>{
+ const one=play(["accounts","protect"]).guidance;
+ assert.deepEqual(one.unknowns.map(x=>x.resolved),[true,false,false]);
+ assert.match(one.unknowns[0].answer,/EVT-044/);
+ assert.doesNotMatch(one.unknowns[0].answer,/正式に承認された/);
+ const two=play(["accounts","protect","trace_id"]).guidance;
+ assert.deepEqual(two.unknowns.map(x=>x.resolved),[true,true,false]);
+ const all=play(["accounts","protect","trace_id","verify_rule"]).guidance;
+ assert.deepEqual(all.unknowns.map(x=>x.resolved),[true,true,true]);
+});
+test("optional routes retain explicitly unresolved questions rather than fabricating answers",()=>{
+ const v=play(["confrontation","rush_report","clear"]).guidance;
+ assert.equal(v.unknowns.filter(x=>x.resolved).length,0);
+ const h=fs.readFileSync("branch-case04.html","utf8");
+ const ui=fs.readFileSync("src/branch-case04-ui.js","utf8");
+ for(const id of ["caseKnown","caseUnknowns","sceneLead"]){
+   assert.ok(h.includes('id="'+id+'"'));
+   assert.ok(ui.includes('$("'+id+'")'));
+ }
+ assert.ok(h.includes("解決するために、まだ分からないこと"));
+ assert.ok(!h.includes("署名が消えていた"));
+});
