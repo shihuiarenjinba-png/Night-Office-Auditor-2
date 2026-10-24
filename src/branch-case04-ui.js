@@ -19,6 +19,20 @@
   $("mainQuestion").textContent=g.caseQuestion;
   $("guideHeading").textContent=g.heading;
   $("guideNext").textContent=g.next;
+  const known=$("caseKnown");known.replaceChildren();
+  for(const fact of g.known)known.append(make("li",fact));
+  const unsolved=$("caseUnknowns");unsolved.replaceChildren();
+  for(const item of g.unknowns){
+   const card=make("div",undefined,item.resolved?"unknown-entry resolved":"unknown-entry");
+   const status=make("span",item.resolved?"確認済み":"未解明","question-status");
+   card.append(status,make("strong",item.question));
+   if(item.resolved)card.append(make("p",item.answer));
+   unsolved.append(card);
+  }
+  const remaining=g.unknowns.filter(item=>!item.resolved).length;
+  $("sceneLead").textContent=remaining===0?
+    "3つの疑問が解消しました。集まった根拠を見てから、監査報告へ進みましょう。":
+    "未解明 "+remaining+" 件。次は「"+g.unknowns.find(item=>!item.resolved).question+"」を調べましょう。";
   const steps=$("proofSteps");steps.replaceChildren();
   for(const step of g.milestones){
    const e=make("span",step.label,step.ready?"proof-step ready":"proof-step");
