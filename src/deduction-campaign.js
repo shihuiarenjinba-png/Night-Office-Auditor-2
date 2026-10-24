@@ -142,13 +142,40 @@ function evaluate(save){
       "提出した資料または判断には不足がある。何が証明できたかを確認する必要がある。"+cfg.continuity}:{})};
  });
  const completed=cases.filter(x=>x.complete).length;
+ const previous01=cases[0].complete;
+ const prior04=cases[1].complete;
+ const continuityVoice={
+  "01":{opening:"仲村「記録の欠番は、消去の証明ではありません。何が残っているか見てください」",
+    proven:"仲村「取消番号を追ってくれて助かりました。次の相談が来ても、先入観なしで見られそうです」",
+    weak:"島袋「断定しなかったのはいい。ただ今夜の処理を説明する資料は、もう一度確認してほしい」"},
+  "04":{opening:previous01?"仲村「前の事件では紙の一覧だけで判断しなかった。今回も電子側を探しましょう」":"島袋「紙の空欄を見た時点で、まだ無断発注とは決められません」",
+    proven:"島袋「止めるなとしか言えなかった。でも記録で説明できたなら、現場も納得できます」",
+    weak:"仲村「紙の署名だけで決めつけたら、現場と経理はまた対立します。追加照会を」"},
+  "05":{opening:prior04?"仲村「前回は記録を照合して疑いが解けました。でも今回は取引先自身が否定している…」":
+    "島袋「今度は支払先の番号が変わった。前のように相殺や表示差だけで済むのでしょうか」",
+    proven:"仲村「ここで送金を止める判断には根拠があります。でも端末名だけで人を責めないでください」",
+    weak:"島袋「誰かのせいにする前に、本人確認と元の依頼票をもう一度調べましょう」"}
+ };
+ const stories=cases.map(c=>{
+  const cfg=continuityVoice[c.id],observed=c.opened>0,follow=c.complete?(c.proved?cfg.proven:cfg.weak):
+   c.approach&&observed?"机上の資料を一つずつ並べた。どの2枚なら、目の前の疑問について証明できるだろう。":
+   c.approach?"聞取りを終えた。資料名と疑問を見比べて、最初に確認する記録を選ぼう。":cfg.opening;
+  const tension=c.approach==="confront"?"強い追及で相手は警戒している。提出する結論には、より丁寧な説明が必要だ。":
+   c.approach==="cooperate"?"慎重な聞取りで対話の余地が残っている。事実と推測を分けて報告しよう。":"";
+  const callback=c.id==="05"&&runs.get("05").opened.has("G")?
+   (runs.get("05").opened.has("H")?"T-7の記録と共有端末の引継ぎ票を両方閲覧済み。個人の特定には追加資料が必要。":"T-7という操作端末名を見つけた。誰が使ったかは、まだ分からない。"):"";
+  return {caseId:c.id,voice:cfg.opening,follow,tension,callback};
+ });
+ const teamRelations=cases.map(c=>({caseId:c.id,approach:c.approach||"undecided",
+    cooperation:c.approach==="cooperate"?"対話を維持":c.approach==="confront"?"慎重な対応が必要":"未接触"}));
+
  const case5=runs.get("05");
  const attributionNotice=case5.opened.has("G")&&case5.opened.has("H")?
    "端末T-7は複数人で使われた記録があり、個人認証・入退室記録がなく操作した自然人は未特定。":
    case5.opened.has("G")?"操作ログにはT-7が出るが、個人を特定する独立資料はまだない。":
    "口座を変更した自然人について、現時点で資料を確保していない。";
 
- return {cases,completed,finale,unlocked:completed>0||cases[0].complete?["01","04","05"]:["01"],
+ return {cases:cases.map((c,i)=>({...c,story:stories[i]})),teamRelations,completed,finale,unlocked:completed>0||cases[0].complete?["01","04","05"]:["01"],
   ...(finale?{finalReport:finale==="accuse_all"?
     "3事件すべてを同一犯の犯行と断定したが、そのような独立した証拠は存在しない。監査報告の信用を失った。":
     finale==="limited"?"結論を保留して追加照会を選んだ。誤告発を避けたが、今夜の調査は未完了となった。":
