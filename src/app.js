@@ -1,7 +1,7 @@
 /* Night Office Auditor Expanded — UI controller. */
 (()=>{"use strict";
-const G=globalThis.NightOfficeGame,Q=globalThis.NightOfficeQuestions,$=id=>document.getElementById(id),KEY="night-office-auditor-expanded:save:v3",NOTEKEY="night-office-auditor-expanded:notes:v1";
-let state=null,lastReport=null,unreadableRaw=null,recoveryBlocked=false,notice="",notebook={version:1,index:0,seed:20261024,choice:null,docs:[]};
+const G=globalThis.NightOfficeGame,Q=globalThis.NightOfficeQuestions,W=globalThis.NightOfficeWitnesses,$=id=>document.getElementById(id),KEY="night-office-auditor-expanded:save:v3",NOTEKEY="night-office-auditor-expanded:notes:v1",VOICEKEY="night-office-auditor-expanded:voices:v1";
+let state=null,lastReport=null,unreadableRaw=null,recoveryBlocked=false,notice="",notebook={version:1,index:0,seed:20261024,choice:null,docs:[]},conversations=Array(24).fill(null);
 const el=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;};
 function load(){let raw=null;try{raw=localStorage.getItem(KEY);return raw?G.validate(JSON.parse(raw)):G.initial();}catch{unreadableRaw=raw;recoveryBlocked=true;notice="保存記録を確認できません。元データは保持しています。";return G.initial();}}
 function emptyNote(){return {version:1,index:state.index,seed:state.seed,choice:null,docs:[]};}
@@ -42,6 +42,50 @@ function submitDecision(){
   notebook=emptyNote();saveNote();persist();render();
   globalThis.OperationTabs?.open("result",{sound:true});
  }catch(e){notice=e.message;render();}
+}
+function validateVoices(data){
+ if(!Array.isArray(data)||data.length!==24||data.some(x=>![null,"careful","press"].includes(x)))return null;
+ return [...data];
+}
+function loadVoices(){
+ conversations=Array(24).fill(null);
+ try{const raw=localStorage.getItem(VOICEKEY);if(raw){const payload=JSON.parse(raw);if(payload.seed===state.seed&&validateVoices(payload.choices))conversations=validateVoices(payload.choices);}}
+ catch{notice="以前の聞取りメモを読み込めません。監査記録は保持されています。";}
+}
+function saveVoices(){
+ if(recoveryBlocked)return;
+ try{localStorage.setItem(VOICEKEY,JSON.stringify({seed:state.seed,choices:conversations}));}
+ catch{notice="会話記録を保存できません。";}
+}
+function interview(choice){
+ if(state.complete||recoveryBlocked||conversations[state.index]!==null||!["careful","press"].includes(choice))return;
+ conversations[state.index]=choice;saveVoices();render();
+}
+function witness(c){
+ const root=$("witnessChoices");root.replaceChildren();
+ if(recoveryBlocked){$("witnessPanel").hidden=true;return;}
+ $("witnessPanel").hidden=false;
+ if(c.complete){
+  const joined=conversations.filter(Boolean);
+  const supportive=joined.filter(x=>x==="careful").length;
+  $("witnessName").textContent="夜明け前、監査室で";
+  $("witnessContext").textContent=joined.length?
+   "関係者と話し合った夜は"+joined.length+"回。そのうち"+supportive+"回、協力を求める聞取りを選んだ。":
+   "記録だけを頼りに監査を終えた。";
+  $("witnessReply").textContent=supportive>joined.length/2?"仲村「最後まで話を聞いてくれて、ありがとう。次の夜も協力します」":
+   joined.length?"島袋「証拠は確かに残った。信頼を取り戻すには、これからの説明が必要だ」":"仲村「証拠の記録は残っています。今度は人の声も聞いてください」";
+  return;
+ }
+ const info=W.speaking(state.index,conversations[state.index],conversations.slice(0,state.index));
+ $("witnessName").textContent=info.name;
+ $("witnessContext").textContent=info.callback||"あなたはどんな姿勢でこの人に話を聞きますか？";
+ $("witnessReply").textContent=info.reply?"「"+info.reply+"」":"";
+ if(!conversations[state.index]){
+  for(const [choice,label] of [["careful","協力を求め、話を聞く"],["press","矛盾点について、説明を求める"]]){
+   const btn=el("button",label,"witness-choice");btn.type="button";
+   btn.addEventListener("click",()=>interview(choice));root.append(btn);
+  }
+ }
 }
 function persist(){if(recoveryBlocked)return false;try{localStorage.setItem(KEY,JSON.stringify(state));return true;}catch{notice="自動保存できません。必要ならセーブを書き出してください。";return false;}}
 function stats(c){$("count").textContent=state.complete?G.CASE_COUNT+" / "+G.CASE_COUNT:c.caseNumber+" / "+G.CASE_COUNT;$("score").textContent=state.score.toLocaleString("ja-JP");$("trust").textContent=state.trust+" / 100";$("time").textContent=state.complete?"終了":c.minutesLeft+"分";}
@@ -93,10 +137,10 @@ function result(){const root=$("result");root.replaceChildren();if(!lastReport){
   el("h4","断定してはいけないこと"),el("p",r.attributionLimits));
  card.append(review);root.append(card);$("nextCase").hidden=state.complete||recoveryBlocked;}
 function history(){const root=$("history");root.replaceChildren();if(!state.history.length){root.append(el("p","まだ監査記録はありません。","muted"));return;}for(const h of state.history.slice(-12).reverse()){const c=G.CHOICES.find(x=>x.id===h.choice),a=G.CHOICES[h.truth],row=el("div",(h.index+1)+"件目 ｜ "+c.label+" / 実際："+a.label+" ｜ 評価 "+(h.scoreDelta>=0?"+":"")+h.scoreDelta,"history-row");root.append(row);}}
-function render(){const c=G.current(state);stats(c);caseView(c);timer(c);sources(c);choices(c);result();history();$("warning").textContent=notice;}
+function render(){const c=G.current(state);stats(c);caseView(c);witness(c);timer(c);sources(c);choices(c);result();history();$("warning").textContent=notice;}
 function download(name,raw){const url=URL.createObjectURL(new Blob([raw],{type:"application/json"})),a=el("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-function exportSave(){if(recoveryBlocked&&unreadableRaw===null){alert("元データを取得できません。");return;}download(recoveryBlocked?"night-office-expanded-unreadable.json":"night-office-expanded-case-"+state.index+".json",recoveryBlocked?unreadableRaw:JSON.stringify({schema:G.VERSION,state,notebook},null,2));}
-async function importSave(file){if(!file)return;try{if(file.size>500000)throw Error("セーブファイルが大きすぎます。");const payload=JSON.parse(await file.text());if(payload.schema!==G.VERSION)throw Error("対応していないセーブバージョンです。");const next=G.validate(payload.state);if(!confirm("現在の進行状況を読み込んだ記録で置き換えますか？"))return;state=next;lastReport=null;unreadableRaw=null;recoveryBlocked=false;notebook=emptyNote();const restored=payload.notebook?validateNote(payload.notebook):null;if(restored)notebook=restored;saveNote();notice="セーブを読み込みました。";persist();render();}catch(e){alert("セーブ読込に失敗しました："+e.message);}}
-function init(){state=load();loadNote();if(!recoveryBlocked)persist();render();$("submitDecision").addEventListener("click",submitDecision);$("nextCase").addEventListener("click",()=>{lastReport=null;render();globalThis.OperationTabs?.open("case",{sound:true});});$("export").addEventListener("click",exportSave);$("import").addEventListener("click",()=>$("savefile").click());$("savefile").addEventListener("change",e=>{const f=e.target.files[0];e.target.value="";void importSave(f);});$("reset").addEventListener("click",()=>{if(!confirm("24案件の進行を消して最初から始めますか？"))return;state=G.initial();lastReport=null;unreadableRaw=null;recoveryBlocked=false;notebook=emptyNote();saveNote();notice="新しい夜を始めました。";persist();render();globalThis.OperationTabs?.open("case",{sound:true});});}
+function exportSave(){if(recoveryBlocked&&unreadableRaw===null){alert("元データを取得できません。");return;}download(recoveryBlocked?"night-office-expanded-unreadable.json":"night-office-expanded-case-"+state.index+".json",recoveryBlocked?unreadableRaw:JSON.stringify({schema:G.VERSION,state,notebook,conversations},null,2));}
+async function importSave(file){if(!file)return;try{if(file.size>500000)throw Error("セーブファイルが大きすぎます。");const payload=JSON.parse(await file.text());if(payload.schema!==G.VERSION)throw Error("対応していないセーブバージョンです。");const next=G.validate(payload.state);if(!confirm("現在の進行状況を読み込んだ記録で置き換えますか？"))return;state=next;lastReport=null;unreadableRaw=null;recoveryBlocked=false;notebook=emptyNote();const restored=payload.notebook?validateNote(payload.notebook):null;if(restored)notebook=restored;saveNote();conversations=validateVoices(payload.conversations)||Array(24).fill(null);saveVoices();notice="セーブを読み込みました。";persist();render();}catch(e){alert("セーブ読込に失敗しました："+e.message);}}
+function init(){state=load();loadNote();loadVoices();if(!recoveryBlocked)persist();render();$("submitDecision").addEventListener("click",submitDecision);$("nextCase").addEventListener("click",()=>{lastReport=null;render();globalThis.OperationTabs?.open("case",{sound:true});});$("export").addEventListener("click",exportSave);$("import").addEventListener("click",()=>$("savefile").click());$("savefile").addEventListener("change",e=>{const f=e.target.files[0];e.target.value="";void importSave(f);});$("reset").addEventListener("click",()=>{if(!confirm("24案件の進行を消して最初から始めますか？"))return;state=G.initial();lastReport=null;unreadableRaw=null;recoveryBlocked=false;notebook=emptyNote();saveNote();conversations=Array(24).fill(null);saveVoices();notice="新しい夜を始めました。";persist();render();globalThis.OperationTabs?.open("case",{sound:true});});}
 document.addEventListener("DOMContentLoaded",init);
 })();
