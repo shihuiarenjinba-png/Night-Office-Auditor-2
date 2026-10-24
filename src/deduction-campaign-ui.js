@@ -88,7 +88,7 @@ function render(){
   p.append(dom("strong",c.voice.name),dom("p","「"+c.voice.line+"」"));people.append(p);
  }
  const qs=$("questionSummary");qs.replaceChildren();
- for(const [i,q] of c.questions){
+ for(const [i,q] of c.questions.entries()){
   const done=q.assigned&&q.answer;
   const div=dom("article",undefined,"question-status"+(done?" ready":""));
   div.append(dom("small",done?"仮説を記録済み":q.assigned?"資料は登録済み":"未確認"),dom("strong",(i+1)+". "+q.text));
