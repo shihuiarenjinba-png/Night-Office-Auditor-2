@@ -56,3 +56,41 @@ test("HTML uses functioning tabs and segregated local save, without network acce
  assert.ok(style.includes("[hidden]"));assert.doesNotThrow(()=>new vm.Script(ui));
  assert.doesNotMatch(ui,/fetch\s*\(|XMLHttpRequest|sendBeacon/);
 });
+
+test("guided objective tells beginners exactly what to check at each stage",()=>{
+ const start=G.view(G.initial());
+ assert.match(start.guidance.caseQuestion,/正式に承認/);
+ assert.match(start.guidance.heading,/最初の疑問/);
+ assert.equal(start.guidance.milestones.length,3);
+ assert.equal(start.guidance.milestones.filter(s=>s.ready).length,0);
+ const doc=play(["accounts","protect"]);
+ assert.equal(doc.guidance.milestones.filter(s=>s.ready).length,1);
+ assert.match(doc.guidance.latest.title,/発注台帳/);
+ assert.match(doc.guidance.latest.next,/EVT-044/);
+ const clock=play(["accounts","protect","trace_id"]);
+ assert.equal(clock.guidance.milestones.filter(s=>s.ready).length,2);
+ assert.match(clock.guidance.heading,/代理権限|承認/);
+ const all=play(["accounts","protect","trace_id","verify_rule"]);
+ assert.equal(all.guidance.milestones.filter(s=>s.ready).length,3);
+ assert.match(all.guidance.next,/3つの資料/);
+});
+test("a risky route has clear objectives and a document request fallback",()=>{
+ const first=play(["confrontation","withdraw"]);
+ assert.match(first.guidance.next,/承認ID/);
+ assert.deepEqual(first.actions.map(x=>x.id),["formal_copy","skip_trace"]);
+ const recovered=play(["confrontation","withdraw","formal_copy"]);
+ assert.equal(recovered.documents.length,2);
+ assert.match(recovered.guidance.latest.text,/23分前/);
+});
+test("guided UI shows immediate evidence implications, not only a separate notebook",()=>{
+ const html=fs.readFileSync("branch-case04.html","utf8");
+ const ui=fs.readFileSync("src/branch-case04-ui.js","utf8");
+ for(const id of ["mainQuestion","proofSteps","guideHeading","guideNext","discovery"]){
+   assert.match(html,new RegExp('id="'+id+'"'));
+   assert.match(ui,new RegExp('\\$\\("'+id+'"\\)'));
+ }
+ assert.match(ui,/今回の調査で判明したこと/);
+ assert.match(ui,/次の手がかり/);
+ assert.match(ui,/報告後の事実照合/);
+ assert.doesNotMatch(html,/今夜、あなたは誰を信用する/);
+});
