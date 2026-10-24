@@ -1,0 +1,109 @@
+:root{color-scheme:dark;--bg:#07141c;--panel:#152b31;--soft:#233c3e;--gold:#e9c68f;--white:#f1ece0;--line:#566e72;--green:#afd5b9;font-family:"Yu Gothic UI","Hiragino Kaku Gothic ProN",Meiryo,system-ui,sans-serif}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--white);background:radial-gradient(ellipse at 75% 0,#21414a 0,transparent 50%),linear-gradient(#07141c,#0e222a);line-height:1.6}
+button,select{font:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.46}
+button:focus-visible,input:focus-visible,a:focus-visible,select:focus-visible{outline:3px solid #ffd58c;outline-offset:3px}
+.shell{max-width:1430px;margin:auto;padding:18px 24px 50px}
+.mast{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #82928c55;padding:7px 0 18px;gap:24px}
+.eyebrow,.chapter{font:11px Georgia,serif;letter-spacing:.2em;color:var(--gold);margin:0 0 7px}
+h1{font:clamp(36px,5vw,58px)/1.2 "Yu Mincho",serif;letter-spacing:.1em;margin:0}
+.sub{font-size:13px;color:#c6d2cd;margin:7px 0 0}
+.night-count{background:#112730;border:1px solid #867c60;padding:10px 20px;text-align:center;min-width:152px}
+.night-count small{display:block;font-size:10px;color:#e1cdaa}
+.night-count strong{font:32px Georgia,serif;display:block;color:#efd7a9}
+.body-grid{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px;margin-top:18px;align-items:start}
+.side{border:1px solid #52686f;background:#0e252c;padding:16px;position:sticky;top:10px}
+.side h2{font:19px "Yu Mincho",serif;margin:0 0 10px}
+.side-instruction,.side-notes p{font-size:11px;color:#b5c9c2;line-height:1.7}
+.case-selector{display:grid;gap:8px;margin:16px 0}
+.case-item{border:1px solid #517078;background:#1b343a;color:#f2ead9;padding:10px;text-align:left;border-radius:3px}
+.case-item.current{border-color:#ffde9e;background:#59442e}
+.case-item small,.case-item strong,.case-item span{display:block}
+.case-item small{font-size:9px;color:#ddc490}
+.case-item strong{font:15px "Yu Mincho",serif;margin:5px 0}
+.case-item span{font-size:10px;color:#c7d5cb}
+.side-notes{border-top:1px solid #516970;padding-top:14px;margin-top:18px}
+.side-notes h3{font:16px "Yu Mincho",serif;margin:0}
+.main{min-width:0}
+.intro{position:relative;background:linear-gradient(110deg,#eee0c3,#ceb797);color:#31291d;padding:23px 28px;border:1px solid #a38a64;box-shadow:5px 7px 0 #0003}
+.intro .chapter{color:#7c4e31}
+.intro h2{font:clamp(23px,3vw,31px) "Yu Mincho",serif;margin:5px 0}
+.intro p{font-size:13px;line-height:1.8;margin:10px 0}
+.intro .location{font-size:11px;color:#7c5533;margin:4px 0}
+.people{padding:12px 14px;background:#eee6d4;margin-top:13px;border-left:3px solid #ab7e4f;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.people>p{font-size:11px;margin:0}
+.person-choice{padding:8px 11px;background:#244742;color:#f8e9ce;border:1px solid #66887f;border-radius:2px}
+.person-response strong{font:16px "Yu Mincho",serif}
+.person-response p{margin:3px 0!important;font-size:12px}
+.overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:14px 0}
+.overview>div{background:#183037;border:1px solid #617678;border-top:2px solid #c99e66;padding:9px 14px}
+.overview small{display:block;font-size:10px;color:#b8cdc3}
+.overview strong{display:block;font:20px "Yu Mincho",serif;color:#f7e0b4}
+.guide,.investigation,.deductions,.report,.finale{background:#11252d;border:1px solid #516970;margin-top:12px;padding:17px}
+.guide h3,.section-title h3,.finale h3{font:20px "Yu Mincho",serif;margin:0}
+.question-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.question-status{padding:13px 14px;background:#3b2f27;border-left:3px solid #d2a66d}
+.question-status.ready{background:#234539;border-color:#91cfa0}
+.question-status small{display:block;font-size:10px;color:#edc28c}
+.question-status.ready small{color:#b9e5c0}
+.question-status strong{font-size:12px}
+.instruction{font-size:11px;color:#b9ccc5;margin:11px 0 0}
+.section-title{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}
+.section-title small{font-size:11px;color:#ddc393}
+.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.evidence-card{min-height:164px;text-align:left;background:linear-gradient(150deg,#ccb991,#ae936b);color:#2d291e;border:2px solid #bea072;padding:12px;box-shadow:3px 4px #0005;border-radius:3px}
+.evidence-card.opened{background:linear-gradient(130deg,#f3e6ca,#ddd0ae)}
+.evidence-card.selected{border:3px solid #3cc1b1;box-shadow:0 0 0 2px #1c5c54,3px 4px #0005}
+.evidence-card small,.evidence-card strong,.evidence-card p,.evidence-card span{display:block}
+.evidence-card small{font-size:10px;color:#665137}
+.evidence-card strong{font:17px "Yu Mincho",serif;line-height:1.3;margin:6px 0}
+.evidence-card p{font-size:12px;line-height:1.55;margin:6px 0}
+.evidence-card span{font-size:10px;color:#366459;font-weight:700;margin-top:9px}
+.card-assign{background:#203940;border:1px solid #738a81;padding:12px 14px;margin-top:15px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;justify-content:space-between}
+.card-assign strong{color:#e6cc9e}
+.card-assign p{font-size:11px;color:#c5d8cd;margin:5px 0}
+.assign-controls{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.assign-controls label{font-size:11px}
+.assign-controls select{max-width:320px;min-width:180px;background:#e9ddc3;color:#293029;padding:10px;border:1px solid #a69983}
+.assign-controls button{background:#d4ac72;border:1px solid #f5ce93;padding:11px;color:#262820;font-size:12px;font-weight:750}
+.minor{border:1px solid #7e9290;background:#152e31;color:#eef1e6;padding:10px;font-size:11px}
+.deduction-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.deduction-question{padding:13px 15px;background:#e9deca;color:#2f2a22;border:1px solid #a98d65}
+.deduction-question h4{font:17px "Yu Mincho",serif;margin:0 0 7px}
+.deduction-question p{font-size:12px}
+.deduction-question small{font-size:11px;color:#705c43}
+.answers{display:grid;gap:5px}
+.choice{display:flex;align-items:center;gap:8px;padding:8px 10px;background:#f6ebd2;border:1px solid #b8a78c;font-size:12px;cursor:pointer}
+.choice input{accent-color:#2e7665;width:17px;height:17px}
+.choice.selected-choice{background:#cde7d2;border:2px solid #448b6d}
+.report p{font-size:13px}
+.report-buttons,.finale-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.report-buttons button,.finale-option{min-height:95px;text-align:left;background:#21463d;color:#f4f2e9;border:1px solid #669784;padding:14px}
+.report-buttons button.review{background:#554022;border-color:#bd9154}
+.report-buttons button.escalate{background:#512a2b;border-color:#bb7775}
+.report-buttons button strong,.report-buttons button span{display:block}
+.report-buttons button strong{font:18px "Yu Mincho",serif}
+.report-buttons button span{font-size:11px;margin-top:6px}
+.report-result,.finale-result{margin-top:15px;padding:18px;background:#e9dfc8;color:#25271f;border-left:5px solid #bd8d51}
+.report-result[hidden],.finale[hidden],.finale-result[hidden]{display:none!important}
+.report-result h4,.finale-result h4{font:20px "Yu Mincho",serif;margin:0 0 12px}
+.graded{padding-top:12px;margin-top:12px;border-top:1px solid #b5a17d}
+.graded strong,.graded small{display:block}
+.graded p{font-size:12px;line-height:1.6;margin:5px 0}
+.graded small{color:#326854}
+.bonus-result{font-weight:700}
+.finale{border-color:#b5905e;background:#243a38}
+.finale p{font-size:12px}
+.finale-option{font-size:12px}
+footer{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:10px;color:#aebdb8;margin-top:20px}
+footer div{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+footer button{background:#422c30;border:1px solid #98656b;color:#e7c4bd;padding:9px}
+footer a{color:var(--gold)}
+.notice{position:sticky;bottom:0;min-height:0;pointer-events:none;color:#f9dbad;font-size:12px;background:#142f33;padding:0 10px}
+.notice:not(:empty){padding:10px;border:1px solid #bb966b;box-shadow:0 -7px 25px #0008}
+@media(max-width:1060px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}.body-grid{grid-template-columns:215px minmax(0,1fr)}}
+@media(max-width:750px){.body-grid{grid-template-columns:1fr}.side{position:static}.case-selector{grid-template-columns:repeat(3,minmax(0,1fr))}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}.question-summary,.deduction-grid{grid-template-columns:1fr}.overview{grid-template-columns:repeat(2,minmax(0,1fr))}.report-buttons,.finale-choices{grid-template-columns:1fr}.mast{align-items:flex-start}.case-item strong{font-size:12px}}
+@media(max-width:480px){.shell{padding:10px}.mast{flex-direction:column}.case-selector{grid-template-columns:1fr}.cards{grid-template-columns:1fr}.intro{padding:17px}.side,.guide,.investigation,.deductions,.report{padding:12px}.assign-controls select{min-width:100%}footer{flex-direction:column;align-items:flex-start}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
