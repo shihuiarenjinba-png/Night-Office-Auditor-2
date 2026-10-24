@@ -1,79 +1,104 @@
-/* CASE04 — permanent evidence reveals and causally linked pairs, no randomness. */
-(function(root,factory){const g=factory();if(typeof module==="object"&&module.exports)module.exports=g;else root.EvidencePairsCase04=g;})(typeof globalThis!=="undefined"?globalThis:this,function(){
-"use strict";
-const VERSION=2,CASE_ID="CASE04-EVIDENCE-PAIRS-LIMITED",CARD_LIMIT=6;
-const CARDS=Object.freeze([
- Object.freeze({id:"A",title:"紙の発注書",category:"発注関係",documentId:"N04-PAPER",detail:"追加照明42万円。発注番号は PO-044。紙の『最終承認者』欄は空白になっている。"}),
- Object.freeze({id:"E",title:"代理承認の規程",category:"承認関係",documentId:"N04-RULE",detail:"社内規程第3条では、緊急発注について権限を持つ代理者の電子承認を正式承認とみなす。"}),
- Object.freeze({id:"C",title:"発注登録ログ",category:"時刻関係",documentId:"N04-ORDER",detail:"発注番号 PO-044 の正式登録時刻は同日20:48。登録時刻の後付け変更記録はない。"}),
- Object.freeze({id:"F",title:"承認者の電子署名",category:"承認関係",documentId:"N04-SIGN",detail:"金城玲子の署名付き電子承認に、申請ID EVT-044 と代理承認権限の識別情報が記録されている。"}),
- Object.freeze({id:"B",title:"電子発注台帳",category:"発注関係",documentId:"N04-LEDGER",detail:"発注番号 PO-044 に電子承認ID EVT-044 が紐付いている。紙の署名欄とは別の承認ルートが存在する。"}),
- Object.freeze({id:"D",title:"電子承認ログ",category:"時刻関係",documentId:"N04-AUDIT",detail:"EVT-044 の署名付き承認記録は同日20:25。後から時刻を書き換えた記録も存在しない。"}),
- Object.freeze({id:"G",title:"現場主任のメール",category:"現場の事情",documentId:"N04-MAIL",detail:"島袋主任から『照明が届かないと明朝の公演が成立しない』という連絡。現場の焦りは分かるが、承認の有無を直接示すものではない。"}),
- Object.freeze({id:"H",title:"機材の納品チェック票",category:"納品状況",documentId:"N04-DELIVERY",detail:"照明機材は予定どおり会場に到着済み。納品の確認には使えるが、会社の正式な発注承認を証明するものではない。"})
-]);
-const PAIRS=Object.freeze([
- Object.freeze({id:"approval-record",cards:Object.freeze(["A","B"]),question:"紙の署名欄以外に、承認の記録は存在するのか？",answer:"発注番号 PO-044 は、電子承認ID EVT-044 に紐付いていた。承認の有効性はまだ未確認。",character:"仲村 澪",line:"紙しか見ていませんでした。電子の台帳にも、たしかに同じ発注番号があります。"}),
- Object.freeze({id:"prior-time",cards:Object.freeze(["C","D"]),question:"承認は発注より前に行われ、後から変更されていないか？",answer:"発注は20:48、承認は20:25。発注23分前に処理され、後付け変更も確認されない。",character:"島袋 颯",line:"発注を急いだのは事実。でも、その前に承認の操作があったんですね。"}),
- Object.freeze({id:"authority",cards:Object.freeze(["E","F"]),question:"電子署名した人物には、正式な代理承認権限があるのか？",answer:"緊急代理承認を認める規程と、金城玲子の権限付き電子署名が一致する。",character:"金城 玲子",line:"口頭の説明だけでは足りません。規程と署名を照合して、初めて有効な承認と呼べます。"})
-]);
-const ids=new Set(CARDS.map(x=>x.id));
-const pairKey=(a,b)=>[a,b].sort().join("-");
-const MATCHES=new Map(PAIRS.map(x=>[pairKey(...x.cards),x]));
-const initial=()=>({version:VERSION,caseId:CASE_ID,actions:[]});
-function evaluate(raw){
- if(!raw||raw.version!==VERSION||raw.caseId!==CASE_ID||!Array.isArray(raw.actions)||raw.actions.length>100)throw Error("セーブデータが不正です。");
- const reveals=new Set(),matches=new Set();let wrong=0,verdict=null,latest=null;
- for(const a of raw.actions){
-  if(!a||typeof a!=="object"||typeof a.type!=="string")throw Error("調査履歴が不正です。");
-  if(verdict!==null)throw Error("報告後の調査操作はできません。");
-  if(a.type==="reveal"){
-   if(typeof a.id!=="string"||!ids.has(a.id)||reveals.has(a.id))throw Error("不正な証拠めくりです。");
-   if(reveals.size>=CARD_LIMIT)throw Error("調査枠は使い切りました。開いた資料の関連付け、または再調査報告へ進んでください。");
-   reveals.add(a.id);latest={kind:"reveal",id:a.id};
-  }else if(a.type==="link"){
-   if(typeof a.a!=="string"||typeof a.b!=="string"||a.a===a.b||!ids.has(a.a)||!ids.has(a.b)||!reveals.has(a.a)||!reveals.has(a.b))throw Error("未公開の証拠は結びつけられません。");
-   const pair=MATCHES.get(pairKey(a.a,a.b));
-   if(pair&&matches.has(pair.id))throw Error("この関係は解明済みです。");
-   if(pair){matches.add(pair.id);latest={kind:"match",id:pair.id};}
-   else{wrong++;latest={kind:"nonmatch",ids:[a.a,a.b]};}
-  }else if(a.type==="report"){
-   if(!["clear","review","escalate"].includes(a.choice))throw Error("報告内容が不正です。");
-   if(a.choice!=="review"&&matches.size!==3)throw Error("証拠が足りない段階で断定はできません。『追加調査』を選ぶか、証拠をさらに結びつけてください。");
-   verdict=a.choice;latest={kind:"report",choice:verdict};
-  }else throw Error("不明な操作です。");
+/* CASE04: separate factual evidence from player-authored deductions.
+   Opening a document never automatically resolves a question or reveals its answer.
+   Exact source pairs, correct options and story conclusion are disclosed ONLY after a report. */
+(function(root,factory){
+ const game=factory();
+ if(typeof module==="object"&&module.exports)module.exports=game;
+ else root.EvidencePairsCase04=game;
+})(typeof globalThis!=="undefined"?globalThis:this,function(){
+ "use strict";
+ const VERSION=3,CASE_ID="CASE04-PLAYER-DEDUCTIONS",CARD_LIMIT=6;
+ const CARDS=Object.freeze([
+  {id:"A",title:"紙の発注書",category:"発注書類",documentId:"N04-PAPER",detail:"追加照明42万円。番号 PO-044。用紙の最終承認者署名欄は空白。"},
+  {id:"E",title:"業務規程・第3条",category:"社内規程",documentId:"N04-RULE",detail:"緊急発注の場合、指定された代理者が所定の電子申請システムで承認できる。"},
+  {id:"C",title:"発注処理の記録",category:"システム履歴",documentId:"N04-ORDER",detail:"発注番号 PO-044 の登録時刻 20:48。記録更新：なし。"},
+  {id:"F",title:"電子署名の検証票",category:"認証記録",documentId:"N04-SIGN",detail:"署名者：金城玲子。申請ID EVT-044。登録権限コード：代理購買3。署名検証：一致。"},
+  {id:"B",title:"購買台帳の登録行",category:"経理台帳",documentId:"N04-LEDGER",detail:"発注番号 PO-044。承認欄ID：EVT-044。申請方法：電子。"},
+  {id:"D",title:"承認処理の記録",category:"システム履歴",documentId:"N04-AUDIT",detail:"申請ID EVT-044。承認タイムスタンプ 20:25。更新履歴：なし。"},
+  {id:"G",title:"現場主任からのメール",category:"関係者の連絡",documentId:"N04-MAIL",detail:"『明朝の公演までに照明が必要。支払は遅らせないでほしい』と島袋主任から連絡。"},
+  {id:"H",title:"機材の納品確認票",category:"納品記録",documentId:"N04-DELIVERY",detail:"会場への追加照明搬入時刻 21:10。数量と型番は納品書と一致。"}
+ ]);
+ const QUESTIONS=Object.freeze([
+  {id:"approval",question:"紙の署名欄以外に、発注 PO-044 の承認記録はあるか？",
+   options:[{id:"yes",label:"別の承認記録が存在する"},{id:"no",label:"承認記録は存在しない"},{id:"unknown",label:"この資料では判断できない"}],
+   correctChoice:"yes",source:["A","B"],
+   explanation:"紙の発注書 PO-044 に対して、購買台帳にも同じ PO-044 があり、電子承認 ID EVT-044 が記録されている。別の申請記録は存在する。ただし、この時点では有効な承認とは確定しない。"},
+  {id:"timing",question:"承認記録は正式発注の前に作られたか？",
+   options:[{id:"before",label:"発注前に承認されていた"},{id:"after",label:"発注後の事後承認だった"},{id:"unknown",label:"前後は確認できない"}],
+   correctChoice:"before",source:["C","D"],
+   explanation:"発注登録ログ PO-044 は20:48、承認ログ EVT-044 は20:25。双方に後付け更新がなく、承認が23分前であると照合できる。"},
+  {id:"authority",question:"署名した人物に、この発注を承認する権限はあったか？",
+   options:[{id:"authorized",label:"必要な代理承認権限があった"},{id:"unauthorized",label:"代理承認する権限がなかった"},{id:"unknown",label:"権限は確認できない"}],
+   correctChoice:"authorized",source:["E","F"],
+   explanation:"社内規程第3条が所定の電子代理承認を認め、署名検証票には金城玲子の署名と代理購買3の権限コードが残る。権限と手続が対応している。"}
+ ]);
+ const CARD_IDS=new Set(CARDS.map(c=>c.id)),Q_IDS=new Set(QUESTIONS.map(q=>q.id));
+ const key=(a,b)=>[a,b].sort().join(":");
+ const initial=()=>({version:VERSION,caseId:CASE_ID,actions:[]});
+ function evaluate(raw){
+  if(!raw||raw.version!==VERSION||raw.caseId!==CASE_ID||!Array.isArray(raw.actions)||raw.actions.length>128)throw Error("セーブ形式が不正です。");
+  const opened=new Set(),assigned=new Map(),answers=new Map();
+  let report=null;
+  for(const action of raw.actions){
+   if(!action||typeof action!=="object"||typeof action.type!=="string"||report)throw Error("操作履歴が不正です。");
+   if(action.type==="reveal"){
+    if(!CARD_IDS.has(action.id)||opened.has(action.id))throw Error("無効なカードです。");
+    if(opened.size>=CARD_LIMIT)throw Error("めくれるカードは6枚までです。");
+    opened.add(action.id);
+   }else if(action.type==="assign"){
+    if(!Q_IDS.has(action.question)||!CARD_IDS.has(action.a)||!CARD_IDS.has(action.b)||
+       action.a===action.b||!opened.has(action.a)||!opened.has(action.b))throw Error("開いた2枚の資料と疑問を指定してください。");
+    assigned.set(action.question,[action.a,action.b]);
+   }else if(action.type==="choose"){
+    const q=QUESTIONS.find(q=>q.id===action.question);
+    if(!q||!q.options.some(x=>x.id===action.answer))throw Error("選択した回答が不正です。");
+    if(!assigned.has(action.question))throw Error("先に、その疑問の根拠資料2枚を登録してください。");
+    answers.set(action.question,action.answer);
+   }else if(action.type==="report"){
+    if(!["clear","escalate","review"].includes(action.verdict))throw Error("監査報告の種類が不正です。");
+    if(action.verdict!=="review"&&QUESTIONS.some(q=>!assigned.has(q.id)||!answers.has(q.id)))
+     throw Error("すべての疑問に根拠資料と回答を提出するか、追加調査を選択してください。");
+    report=action.verdict;
+   }else throw Error("未登録の操作です。");
+  }
+  const questions=QUESTIONS.map(q=>({
+   id:q.id,question:q.question,options:q.options.map(x=>({...x})),
+   assigned:assigned.has(q.id)?assigned.get(q.id).map(id=>CARDS.find(c=>c.id===id).documentId):null,
+   assignedIds:assigned.has(q.id)?[...assigned.get(q.id)]:null,
+   answer:answers.get(q.id)||null
+  }));
+  const submitted=report!==null;
+  const evaluation=submitted?QUESTIONS.map(q=>{
+   const pair=assigned.get(q.id),correctEvidence=!!pair&&key(...pair)===key(...q.source);
+   const correctAnswer=answers.get(q.id)===q.correctChoice;
+   return {id:q.id,question:q.question,chosenAnswer:answers.get(q.id)||null,
+    chosenLabel:q.options.find(x=>x.id===answers.get(q.id))?.label||"未回答",
+    correctLabel:q.options.find(x=>x.id===q.correctChoice).label,
+    documents:pair?pair.map(id=>CARDS.find(c=>c.id===id).documentId):[],
+    correctEvidence,correctAnswer,substantiated:correctEvidence&&correctAnswer,
+    explanation:q.explanation,requiredDocuments:q.source.map(id=>CARDS.find(c=>c.id===id).documentId)};
+  }):null;
+  const substantiated=submitted&&evaluation.every(x=>x.substantiated);
+  const outcome=!submitted?null:report==="review"?
+   "証拠が不十分な点を明示し、追加資料の照会を依頼した。調査が終わったわけではない。":
+   report==="clear"&&substantiated?
+   "3点を実際に照合し、正式な代理承認であると立証できた。経理と現場に根拠を共有した。":
+   report==="clear"?
+   "結論は正しい可能性があるが、提出した資料と選択した回答では十分に立証できない。追加確認が必要。":
+   "提出した根拠は無断発注を裏付けなかった。誤った疑義を伝えた場合は訂正が必要。";
+  return {
+   version:VERSION,cardCount:CARDS.length,cardLimit:CARD_LIMIT,opened:opened.size,remaining:CARD_LIMIT-opened.size,
+   cards:CARDS.map(c=>({...c,revealed:opened.has(c.id)})),
+   questions,readyToConclude:QUESTIONS.every(q=>assigned.has(q.id)&&answers.has(q.id)),
+   submitted,report,evaluation,outcome,substantiated,attempts:raw.actions.length
+  };
  }
- const resolved=PAIRS.map(p=>({id:p.id,question:p.question,answer:matches.has(p.id)?p.answer:null,completed:matches.has(p.id),documentIds:matches.has(p.id)?p.cards.map(id=>CARDS.find(x=>x.id===id).documentId):[]}));
- const completion=matches.size;
- let ending=null;
- if(verdict){
-  ending=verdict==="clear"?"承認ID・時刻・代理権限の3点をつなぎ、正式な電子代理承認を立証した。現場と経理の対立は記録の照合によって解消した。":
-   verdict==="review"&&matches.size===3?"証拠はすべてそろっていたが、確認を保留した。責任者に報告する時間が追加で必要になる。":
-   verdict==="review"?"開けた資料からは必要な事実をすべて立証できなかった。推測で無断発注と断定せず、追加資料の正式照会を依頼した。":
-   "正式な承認を証明する3点の資料がそろっていたのに無断発注と報告した。現場への訂正と説明が必要になった。";
+ function apply(raw,action){
+  evaluate(raw);
+  if(!action||typeof action!=="object")throw Error("操作を指定してください。");
+  const next={version:VERSION,caseId:CASE_ID,actions:[...raw.actions,{...action}]};
+  evaluate(next);
+  return next;
  }
- const slotsRemaining=CARD_LIMIT-reveals.size;
- const suggestions=completion===3?"3つの疑問が解明しました。監査報告へ進んでください。":
-  slotsRemaining===0?"これ以上カードは開けません。公開済みの資料を組み合わせるか、証拠不足として『追加調査』を報告してください。":
-  reveals.size===0?"全8枚のうち開けるのは6枚まで。資料名と未解明の疑問を見比べ、必要そうな資料を選びましょう。":
-  "残り"+slotsRemaining+"枚を開けます。カードの内容は消えません。解明したい疑問と資料名を見比べて選びましょう。";
- const hints=PAIRS.filter(p=>!matches.has(p.id)).map(p=>({
-  question:p.question,unseen:p.cards.filter(id=>!reveals.has(id)).map(id=>CARDS.find(x=>x.id===id).title),
-  known:p.cards.filter(id=>reveals.has(id)).map(id=>CARDS.find(x=>x.id===id).title)
- }));
- return {version:VERSION,caseId:CASE_ID,actions:raw.actions.map(a=>({...a})),cards:CARDS.map(c=>({...c,revealed:reveals.has(c.id),matched:PAIRS.some(p=>matches.has(p.id)&&p.cards.includes(c.id))})),
-  questions:resolved,progress:completion,total:3,opened:reveals.size,cardLimit:CARD_LIMIT,slotsRemaining:CARD_LIMIT-reveals.size,canReveal:reveals.size<CARD_LIMIT,cardCount:CARDS.length,wrong,verdict,ending,latest,hints,suggestions,canConclude:completion===3,canReview:verdict===null,
-  lastDialogue:latest?.kind==="match"?PAIRS.find(p=>p.id===latest.id):null,
-  finalReason:"PO-044 と EVT-044 の対応、発注20:48の23分前にあたる承認20:25、規程第3条と金城玲子の電子署名を組み合わせることで、発注前の正式な代理承認を立証できる。"};
-}
-const view=raw=>evaluate(raw);
-function apply(raw,action){
- const prev=evaluate(raw);
- if(!action||typeof action!=="object")throw Error("行動を選んでください。");
- if(action.type==="report"&&action.choice!=="review"&&prev.progress!==3)throw Error("断定にはすべての根拠が必要です。");
- const next={version:VERSION,caseId:CASE_ID,actions:[...raw.actions,{...action}]};
- evaluate(next);
- return next;
-}
-return Object.freeze({VERSION,CASE_ID,CARD_LIMIT,CARDS,PAIRS,initial,view,apply});
+ return Object.freeze({VERSION,CASE_ID,CARD_LIMIT,CARDS,QUESTIONS,initial,view:evaluate,apply});
 });
