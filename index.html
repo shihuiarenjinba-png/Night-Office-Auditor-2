@@ -3,10 +3,11 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none';script-src 'self';style-src 'self';connect-src 'none';img-src 'self' data:;object-src 'none';frame-src 'none';base-uri 'none'">
-<title>深夜監査室 — Expanded Edition</title>
+<title>深夜監査室 — 二十三の夜と最後の記録</title>
 <link rel="stylesheet" href="./styles.css">
 <script defer src="./src/case-proofbook.js"></script>
 <script defer src="./src/engine.js"></script>
+<script defer src="./src/paid-questions.js"></script>
 <script defer src="./src/app.js"></script>
 <script defer src="./src/operation-tabs.js"></script>
 </head>
@@ -16,7 +17,7 @@
 <header class="masthead">
   <div class="brand">
     <h1>深夜監査室</h1>
-    <p>NIGHT OFFICE AUDITOR — EXPANDED EDITION</p>
+    <p>NIGHT OFFICE AUDITOR — MIDNIGHT FILES</p>
   </div>
   <blockquote id="signatureLine">深夜、数字は嘘をつくことがある。</blockquote>
   <div class="hud" aria-label="進行状況">
@@ -36,7 +37,7 @@
       <h2 id="caseTitle">読み込み中...</h2>
       <p class="location-line" id="locationLine">今夜の事件は、監査室で起きている。</p>
       <p class="case-story" id="caseStory"></p>
-      <p class="deadline">夜明けまでに、調べる証拠と報告内容を選んでください。</p>
+      <p class="deadline">調べる記録を選び、根拠から何が言えるかを自分で決めてください。</p>
     </div>
     <div class="case-photo" aria-hidden="true"><div class="photo-moon"></div><div class="photo-desk"></div><div class="handwrite">数字は、黙っているとは限らない。</div></div>
   </article>
@@ -44,9 +45,9 @@
     <div class="evidence-preview">
       <h3>証拠・資料 <span>EVIDENCE FILES</span></h3>
       <div class="preview-files">
-        <div><b>領収書</b><span>金額と日付を照合</span></div>
-        <div><b>取引明細</b><span>記録の流れを追跡</span></div>
-        <div><b>社内連絡</b><span>承認と連絡を確認</span></div>
+        <div><b>帳簿</b><span>原票・金額</span></div>
+        <div><b>履歴</b><span>時刻・操作</span></div>
+        <div><b>承認</b><span>権限・連絡</span></div>
       </div>
     </div>
     <div class="case-note"><small>監査官メモ</small><p id="caseNote">先入観ではなく、証拠の食い違いを探す。</p></div>
@@ -55,15 +56,24 @@
 
 <section class="screen evidence-screen" data-screen="evidence" hidden>
   <div class="screen-title"><span>02</span><div><small>EVIDENCE DESK</small><h2>証拠・資料を調べる</h2></div></div>
-  <div class="timer"><strong id="timerTitle">残り10分</strong><progress id="timerBar" max="10" value="10"></progress><span>確認できる証拠は最大2種類です。</span></div>
+  <div class="timer"><strong id="timerTitle">残り10分</strong><progress id="timerBar" max="10" value="10"></progress><span>調査した記録はいつでも読み返せます。調べる順番はあなたが決めてください。</span></div>
   <div id="sources" class="source-grid"></div>
   <div class="evidence-desk"><h3>今夜の証拠ファイル</h3><div id="findings" class="finding-grid"></div></div>
 </section>
 
 <section class="screen decision-screen" data-screen="decision" hidden>
   <div class="screen-title"><span>03</span><div><small>MAKE A JUDGMENT</small><h2>あなたの判断を報告する</h2></div></div>
-  <p class="decision-copy">疑いだけでは報告できない。証拠と違和感を整理し、最後はあなたが決める。</p>
-  <div id="choices" class="choice-grid"></div>
+  <p class="decision-copy">資料が教えてくれるのは記録された事実だけ。ここから先の判断は、あなたが行います。</p>
+  <div class="deduction-panel">
+    <p class="deduction-kicker">今夜、解き明かすべきこと</p>
+    <h3 id="caseQuestion">この記録は何を示しているのか？</h3>
+    <h4>判断に使う資料</h4>
+    <p class="deduction-help">証拠を調べたら、根拠として提出する資料を指定してください。</p>
+    <div id="selectedDocuments" class="document-choices"></div>
+    <h4>あなたの結論</h4>
+    <div id="choices" class="choice-grid"></div>
+    <button id="submitDecision" type="button" class="next" disabled>この内容で監査報告する</button>
+  </div>
   <p id="warning" class="warning" role="status"></p>
 </section>
 
