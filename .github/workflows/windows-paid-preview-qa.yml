@@ -42,7 +42,7 @@ jobs:
       - name: Package Windows x64 without Store identity or certificate
         shell: pwsh
         run: |
-          npx --yes @electron/packager@20.3.0 qa-app NightOfficePaid_QA_UNSIGNED --platform=win32 --arch=x64 --electron-version=45.0.0 --out=qa-dist --overwrite
+          npx --yes @electron/packager@20.3.0 qa-app NightOfficePaid_QA_UNSIGNED --platform=win32 --arch=x64 --electron-version=44.9.3 --out=qa-dist --overwrite
           if ($LASTEXITCODE -ne 0) { throw "Electron packaging failed" }
       - name: Launch packaged EXE and capture exact-size Windows UI
         shell: pwsh
@@ -52,10 +52,17 @@ jobs:
           if (-not $exe) { throw "Windows EXE missing" }
           $target = (Resolve-Path windows-qa).Path
           $env:ELECTRON_ENABLE_LOGGING = "1"
-          & $exe "--qa-capture=$target" "--enable-logging"
+          $env:ELECTRON_ENABLE_STACK_DUMPING = "1"
+          $env:ELECTRON_LOG_FILE = Join-Path $target "electron.log"
+          $resourceRoot = Join-Path (Split-Path $exe -Parent) "resources"
+          Get-ChildItem $resourceRoot | ForEach-Object { Write-Host "PACKAGE_RESOURCE $($_.Name)" }
+          "qa-app-main-js:" | Set-Content "windows-qa/QA_LAUNCH_ENV.txt"
+          $exe | Add-Content "windows-qa/QA_LAUNCH_ENV.txt"
+          node --check qa-app/main.cjs
+          & $exe "--qa-capture=$target" "--enable-logging" "--log-file=$env:ELECTRON_LOG_FILE"
           $exitCode = $LASTEXITCODE
           Get-ChildItem windows-qa | ForEach-Object { Write-Host "QA_FILE $($_.Name)" }
-          foreach ($report in @('WINDOWS_START_ERROR.txt', 'WINDOWS_QA_ERROR.txt', 'WINDOWS_QA_STAGE.txt')) {
+          foreach ($report in @("WINDOWS_START_ERROR.txt", "WINDOWS_QA_ERROR.txt", "WINDOWS_QA_STAGE.txt", "electron.log")) {
             if (Test-Path "windows-qa/$report") { Get-Content "windows-qa/$report" }
           }
           if ($exitCode -ne 0) { throw "Windows packaged app runtime QA failed: exit $exitCode" }
