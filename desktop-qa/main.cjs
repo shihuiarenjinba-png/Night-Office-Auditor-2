@@ -3,7 +3,7 @@
 const {app,BrowserWindow,session}=require("electron");
 const fs=require("node:fs"),path=require("node:path"),url=require("node:url");
 const runArg=process.argv.find(x=>x.startsWith("--qa-capture="));
-const out=runArg?runArg.slice("--qa-capture=".length):null;
+const out=process.env.NIGHT_QA_CAPTURE_DIR||(runArg?runArg.slice("--qa-capture=".length):null);
 if(out)app.disableHardwareAcceleration();
 app.setName("NightOfficePaidPreview_QA_UNSIGNED");
 function restrict(win){
