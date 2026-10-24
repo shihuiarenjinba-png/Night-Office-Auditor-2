@@ -166,7 +166,7 @@ function evaluate(save){
   const tension=c.approach==="confront"?"強い追及で相手は警戒している。提出する結論には、より丁寧な説明が必要だ。":
    c.approach==="cooperate"?"慎重な聞取りで対話の余地が残っている。事実と推測を分けて報告しよう。":"";
   const callback=c.id==="05"&&runs.get("05").opened.has("G")?
-   (runs.get("05").opened.has("H")?"T-7の記録と共有端末の引継ぎ票を両方閲覧済み。個人の特定には追加資料が必要。":"T-7という操作端末名を見つけた。誰が使ったかは、まだ分からない。"):"";
+   (runs.get("05").opened.has("H")?"T-7は複数人で使われる共有端末と記録されていた。個人の特定には追加資料が必要。":"T-7という操作端末名を見つけた。誰が使ったかは、まだ分からない。"):"";
   return {caseId:c.id,voice:cfg.opening,follow,tension,callback};
  });
  const trust=cases.reduce((score,c)=>score+
