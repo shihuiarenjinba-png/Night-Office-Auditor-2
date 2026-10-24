@@ -85,7 +85,8 @@ test("cross-case verdict distinguishes genuine unauthorized change from canceled
  const before=G.view(s);assert.equal(before.finale,null);
  assert.throws(()=>run(G.initial(),{type:"final",choice:"distinguish"}),/全事件/);
  s=run(s,{type:"final",choice:"distinguish"});
- const after=G.view(s);assert.match(after.finalReport,/T-7/);
+ const after=G.view(s);assert.doesNotMatch(after.finalReport,/T-7/);
+ assert.match(after.finalReport,/自然人|人物/);
  assert.match(after.finalReport,/重大な不一致/);
  assert.throws(()=>run(s,{type:"final",choice:"accuse_all"}),/操作履歴/);
 });
@@ -94,4 +95,13 @@ test("persisted campaign is replay-safe and rejects injected proofs and stages",
  assert.throws(()=>G.view({...s,version:99}),/形式/);
  assert.throws(()=>G.view({version:1,actions:[{type:"answer",caseId:"01",questionId:"record",choice:"yes"}]}),/根拠/);
  assert.throws(()=>G.view({version:1,actions:[{type:"open",caseId:"05",cardId:"A"}]}),/第1事件/);
+});
+
+test("cross-case final summary cites shared terminal only when the player saw those sources",()=>{
+ let state=solve(G.initial(),"01");
+ state=solve(state,"04");
+ state=solve(state,"05");
+ assert.equal(G.view(state).finale,null);
+ const unseen=G.view(G.apply(state,{type:"final",choice:"distinguish"}));
+ assert.doesNotMatch(unseen.finalReport,/T-7/);
 });
