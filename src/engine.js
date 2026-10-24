@@ -1,7 +1,9 @@
 /* Night Office Auditor Expanded — offline deterministic story/evidence engine. */
 (function(root,factory){const game=factory();if(typeof module==="object"&&module.exports)module.exports=game;else root.NightOfficeGame=game;})(typeof globalThis!=="undefined"?globalThis:this,function(){
 "use strict";
-const VERSION=2,CASE_COUNT=24,BUDGET=10;
+const VERSION=3,CASE_COUNT=24,BUDGET=10;
+const PROOFBOOK=typeof module==="object"&&module.exports?require("./case-proofbook.js"):globalThis.NightOfficeProofBook;
+if(!Array.isArray(PROOFBOOK)||PROOFBOOK.length!==CASE_COUNT)throw Error("案件ごとの証拠資料を読み込めませんでした。");
 const SOURCES=Object.freeze([
  {id:"ledger",label:"領収書・台帳を照合",cost:3},
  {id:"timeline",label:"時刻・操作履歴を追う",cost:4},
@@ -52,14 +54,16 @@ function random(seed,index,salt){let a=(seed^Math.imul(index+1,0x9e3779b1)^Math.
 function spec(seed,index){
  integer(seed,"seed",1,2147483647);integer(index,"index",0,CASE_COUNT-1);
  const scenario=SCENARIOS[index];
- const answers=Array.from({length:CASE_COUNT},(_,i)=>i%3);
- for(let i=answers.length-1;i>0;i--){const j=Math.floor(random(seed,i,900+i)*(i+1));[answers[i],answers[j]]=[answers[j],answers[i]];}
- const truth=answers[index],key=Math.floor(random(seed,index,41)*SOURCES.length);
+ const proof=PROOFBOOK[index];
+ const truth=proof.verdict,key=SOURCES.findIndex(x=>x.id===proof.primary);
+ if(key<0)throw Error("証拠資料の調査先が不正です。");
  return {...scenario,index,truth,key,signature:SIGNATURES[Math.min(SIGNATURES.length-1,Math.floor(index/6))]};
 }
 function initial(seed=20261024){integer(seed,"seed",1,2147483647);return {version:VERSION,seed,index:0,score:0,trust:60,history:[],active:{checked:[],minutesLeft:BUDGET},complete:false};}
 function checkedCost(list){if(!Array.isArray(list)||list.length>2)throw Error("調査記録が多すぎます。");if(new Set(list).size!==list.length)throw Error("調査記録に重複があります。");let sum=0;for(const id of list){const s=SOURCES.find(x=>x.id===id);if(!s)throw Error("調査記録の種類が不正です。");sum+=s.cost;}if(sum>BUDGET)throw Error("制限時間を超えた調査記録です。");return sum;}
-function recordFor(seed,index,choice,checked){const c=spec(seed,index),ci=CHOICES.findIndex(x=>x.id===choice);if(ci<0)throw Error("報告の種類が不正です。");const effort=checkedCost(checked);return {index,choice,checked:[...checked],truth:c.truth,scoreDelta:RATING[c.truth][ci]-2*effort,trustDelta:TRUST[c.truth][ci],effort};}
+function recordFor(seed,index,choice,checked){const c=spec(seed,index),ci=CHOICES.findIndex(x=>x.id===choice);if(ci<0)throw Error("報告の種類が不正です。");const effort=checkedCost(checked),supported=checked.length===2&&checked.includes(SOURCES[c.key].id);
+ const unsupportedPenalty=choice!=="review"&&!supported?65:0;
+ return {index,choice,checked:[...checked],truth:c.truth,scoreDelta:RATING[c.truth][ci]-2*effort-unsupportedPenalty,trustDelta:TRUST[c.truth][ci],effort,supported};}
 function validate(raw){
  if(!raw||raw.version!==VERSION||!Array.isArray(raw.history)||!raw.active||!Array.isArray(raw.active.checked))throw Error("セーブ形式が不正です。");
  const seed=integer(raw.seed,"seed",1,2147483647),index=integer(raw.index,"index",0,CASE_COUNT);
@@ -69,21 +73,12 @@ function validate(raw){
  const used=checkedCost(raw.active.checked);if(raw.active.minutesLeft!==BUDGET-used)throw Error("調査時間の残量が一致しません。");if(index===CASE_COUNT&&raw.active.checked.length)throw Error("完了済み案件に調査記録があります。");if(raw.score!==score||raw.trust!==trust)throw Error("得点・信用度が履歴と一致しません。");return clone(raw);
 }
 function clue(seed,index,id){
- const c=spec(seed,index),i=SOURCES.findIndex(x=>x.id===id);if(i<0)throw Error("存在しない調査先です。");
- if(i===c.key){
-  const decisive=[
-   [c.subject+"の差分は翌朝の取消・訂正記録まで追跡でき、処理者と時刻も一致する。",c.subject+"の数字は合うが、根拠書類が一つ欠けている。追加確認が必要。",c.subject+"の訂正履歴と独立記録が食い違い、同じ不一致が複数箇所で続いている。"],
-   ["操作時刻は別システムのログとも一致し、正当な処理として説明できる。","重要な時間帯だけ操作ログが欠け、説明を確定できない。","二つの独立ログを突合しても同じ変更を説明できず、人為的な操作痕跡が残る。"],
-   ["承認は事前に記録され、関係者の返信も整合している。","承認依頼はあるが、最終承認の返信が見つからない。","承認者本人が依頼を否定し、連絡記録とも一致していない。"]
-  ][i][c.truth];
-  return {id,title:SOURCES[i].label,detail:decisive,reliability:"主要な証拠"};
- }
- const support=[
-  ["合計額は帳簿と一致するが、備考欄は短い。","一部の内訳に丸め処理がある。","日付は合うが、入力者名が省略されている。"],
-  ["時刻差は数分ある。","夜間更新のログが残る。","端末側に時計補正の履歴がある。"],
-  ["メール件名は通常どおりだ。","代理承認の名義が含まれる。","連絡先欄に旧表記が残る。"]
- ][i][Math.floor(random(seed,index,120+i)*3)];
- return {id,title:SOURCES[i].label,detail:support,reliability:"参考情報"};
+ spec(seed,index);
+ const i=SOURCES.findIndex(x=>x.id===id);
+ if(i<0)throw Error("存在しない調査先です。");
+ const proof=PROOFBOOK[index],document=proof.evidence[id];
+ if(!document)throw Error("証拠文書が登録されていません。");
+ return {id,documentId:document.id,title:SOURCES[i].label,detail:document.detail,reliability:"照合可能な記録"};
 }
 function current(raw){
  const s=validate(raw);
@@ -96,8 +91,18 @@ function current(raw){
 function inspect(raw,id){const s=validate(raw);if(s.complete)throw Error("すべての案件を終了しました。");const source=SOURCES.find(x=>x.id===id);if(!source)throw Error("存在しない調査先です。");if(s.active.checked.includes(id))throw Error("この証拠はすでに確認しています。");if(s.active.minutesLeft<source.cost)throw Error("この調査を行う時間が残っていません。");s.active.checked.push(id);s.active.minutesLeft-=source.cost;return {state:validate(s),finding:clue(s.seed,s.index,id)};}
 function decide(raw,choice){
  const s=validate(raw);if(s.complete)throw Error("これ以上の案件はありません。");const c=spec(s.seed,s.index),record=recordFor(s.seed,s.index,choice,s.active.checked),oldScore=s.score;s.history.push(record);s.index++;s.score+=record.scoreDelta;s.trust=Math.max(0,Math.min(100,s.trust+record.trustDelta));s.complete=s.index===CASE_COUNT;s.active={checked:[],minutesLeft:BUDGET};
- const actual=CHOICES[c.truth],judgment=CHOICES.find(x=>x.id===choice);
- const report={caseNumber:c.index+1,title:c.title,location:c.location,judgment:judgment.label,actual:actual.label,correct:actual.id===choice,scoreDelta:s.score-oldScore,trustDelta:record.trustDelta,keyFinding:clue(s.seed,c.index,SOURCES[c.key].id).detail,message:actual.id===choice?"証拠に沿った判断だった。夜は少しだけ静かになった。":c.truth===2&&choice==="clear"?"重大な不一致を見逃した。次は独立した記録を優先する。":c.truth===0&&choice==="escalate"?"正当な処理を疑いすぎた。推測と証拠を分ける必要がある。":"結論を急がず、追加確認として残す判断も監査の一部だ。"};
+ const actual=CHOICES[c.truth],judgment=CHOICES.find(x=>x.id===choice),proof=PROOFBOOK[c.index];
+ const message=actual.id===choice?
+   (record.supported?"調査した主要資料と補強資料が結論に一致しました。":"判断結果は一致していますが、確認した資料では裏付けが不十分です。"):
+   "判断と照合結果は異なりました。資料番号ごとに矛盾を検証してください。";
+ const report={caseNumber:c.index+1,title:c.title,location:c.location,judgment:judgment.label,
+  actual:actual.label,correct:actual.id===choice,supported:record.supported,
+  scoreDelta:s.score-oldScore,trustDelta:record.trustDelta,
+  keyFinding:clue(s.seed,c.index,SOURCES[c.key].id).detail,message,
+  proofExplanation:proof.conclusion,alternative:proof.alternative,attributionLimits:proof.limits,
+  primaryDocument:proof.evidence[proof.primary].id,
+  reviewedDocumentIds:record.checked.map(id=>proof.evidence[id].id),
+  postReviewDocuments:SOURCES.map(x=>({id:proof.evidence[x.id].id,title:x.label,detail:proof.evidence[x.id].detail,reviewed:record.checked.includes(x.id)}))};
  return {state:validate(s),report};
 }
 return Object.freeze({VERSION,CASE_COUNT,BUDGET,SOURCES,CHOICES,SIGNATURES,SCENARIOS,initial,validate,current,inspect,decide,spec,clue,random});
