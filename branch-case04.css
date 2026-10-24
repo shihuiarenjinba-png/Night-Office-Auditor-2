@@ -66,3 +66,31 @@ button:focus-visible,a:focus-visible{outline:3px solid #eec177;outline-offset:3p
 @media(max-width:760px){.mast{align-items:flex-start}.clock{font-size:21px;padding:10px}.frame{padding:12px}.hud,.documents,.people{grid-template-columns:repeat(2,minmax(0,1fr))}.scene{padding:78px 17px 18px}.case-stamp{top:12px;left:16px}.choices{grid-template-columns:1fr}.sheet{padding:18px}.scene{padding-top:75px}}
 @media(max-width:460px){.hud,.documents,.people{grid-template-columns:1fr}.mast{flex-direction:column}.tabs button{min-width:100%;}.footer{flex-direction:column;align-items:flex-start}}
 @media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
+
+/* Guided case flow: the question and next lead remain visible across tabs. */
+.investigation-guide{display:grid;grid-template-columns:1.08fr 1.25fr 1.25fr;gap:0;margin-top:10px;background:linear-gradient(125deg,#162c32,#102329);border:1px solid #78877a;border-top:3px solid #dcba80;border-radius:4px;box-shadow:0 10px 30px #0005}
+.investigation-guide>div{padding:12px 17px;min-width:0}
+.investigation-guide>div+div{border-left:1px solid #526968}
+.investigation-guide small{display:block;margin-bottom:5px;color:#dfc292;font-size:11px;font-weight:700;letter-spacing:.03em}
+.guide-question p{margin:0;font-family:"Yu Mincho",serif;font-size:15px;line-height:1.6}
+.guide-next strong{display:block;color:#f1ddbd;font-size:14px}
+.guide-next p{color:#c3d5cf;margin:5px 0 0;font-size:12px;line-height:1.6}
+.proof-steps{display:flex;flex-wrap:wrap;align-items:center;gap:5px}
+.proof-step{display:inline-flex;align-items:center;gap:5px;border:1px solid #516c6a;border-radius:3px;padding:5px 8px;font-size:11px;color:#aebeba;background:#13272c}
+.proof-step:before{content:"○";font-size:13px;color:#aebeba}
+.proof-step.ready{border-color:#89bda1;background:#244738;color:#edf2e5}
+.proof-step.ready:before{content:"✓";color:#b8ebc6}
+.discovery{margin:0 0 14px;background:#e3d3af;color:#2d2921;border-left:5px solid #aa7842;padding:13px 15px;border-radius:2px;box-shadow:3px 4px 14px #0005}
+.discovery small{font-size:10px;letter-spacing:.11em;color:#776342;font-weight:750}
+.discovery h3{font-family:"Yu Mincho",serif;font-size:17px;margin:2px 0 5px}
+.discovery p{margin:4px 0;font-size:12px;line-height:1.75}
+.discovery strong{font-size:12px;display:block;margin-top:6px;color:#63451e}
+.choice-label{margin:0 0 10px;font-family:"Yu Mincho",serif;color:#f0d5a8;font-weight:850}
+.choice-label span{display:block;font-family:inherit;font-size:11px;color:#bccdc6;font-weight:400}
+.choices button.risky{background:linear-gradient(145deg,#542a27,#352323);border-color:#c27b66}
+.choices button.risky span{color:#f0c6b6}
+.ending .afterword{background:#102d30;border:1px solid #79948c;padding:13px;margin-top:14px}
+.ending .afterword strong{color:#f2cd93}
+.ending .afterword p{font-size:12px}
+@media(max-width:970px){.investigation-guide{grid-template-columns:1fr 1fr}.guide-next{grid-column:1/-1;border-left:0!important;border-top:1px solid #526968}}
+@media(max-width:620px){.investigation-guide{grid-template-columns:1fr}.investigation-guide>div+div{border-left:0;border-top:1px solid #526968}.guide-next{grid-column:auto}}
