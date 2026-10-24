@@ -21,10 +21,10 @@ async function screenshot(win,dest,width,height){
  if(!d.isAttached())d.attach("1.3");
  await d.sendCommand("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:1,mobile:false});
  await d.sendCommand("Page.enable");
- const result=await d.sendCommand("Page.captureScreenshot",{
+ const result=await Promise.race([d.sendCommand("Page.captureScreenshot",{
   format:"png",fromSurface:true,captureBeyondViewport:false,
   clip:{x:0,y:0,width,height,scale:1}
- });
+ }),new Promise((_,reject)=>setTimeout(()=>reject(Error("CDP screenshot timeout after 15 seconds")),15000))]);
  const bytes=Buffer.from(result.data,"base64");
  const pixelWidth=bytes.readUInt32BE(16),pixelHeight=bytes.readUInt32BE(20);
  if(pixelWidth!==width||pixelHeight!==height)throw Error("Screenshot size mismatch: "+pixelWidth+"x"+pixelHeight);
@@ -34,13 +34,14 @@ async function screenshot(win,dest,width,height){
 }
 app.whenReady().then(async()=>{
  session.defaultSession.setPermissionRequestHandler((_wc,_p,respond)=>respond(false));
- const win=new BrowserWindow({width:1280,height:720,show:!out,
+ const win=new BrowserWindow({width:1280,height:720,show:true,
   backgroundColor:"#07141c",webPreferences:{
    nodeIntegration:false,contextIsolation:true,sandbox:true,webSecurity:true,
    webviewTag:false,allowRunningInsecureContent:false}
  });
  restrict(win);
  await win.loadFile(path.join(__dirname,"deduction-campaign.html"));
+ await new Promise(resolve=>setTimeout(resolve,900));
  if(out){
   try{
    fs.mkdirSync(out,{recursive:true});
@@ -48,9 +49,11 @@ app.whenReady().then(async()=>{
    const state=await win.webContents.executeJavaScript('({title:document.title,caseCount:document.querySelectorAll(".case-item").length,cardCount:document.querySelectorAll(".evidence-card").length,questions:document.querySelectorAll(".question-status").length,progress:document.getElementById("campaignProgress")?.textContent})');
    if(state.caseCount!==3||state.cardCount!==8||state.questions!==2||!state.title.includes("深夜監査室"))
     throw Error("Unexpected Windows DOM "+JSON.stringify(state));
+   fs.appendFileSync(path.join(out,"WINDOWS_QA_STAGE.txt"),"DOM_VERIFIED "+JSON.stringify(state)+"\n");
    const before=await screenshot(win,path.join(out,"windows-1280x720.png"),1280,720);
    const action=await win.webContents.executeJavaScript('(()=>{const btn=document.querySelector(".person-choice");btn.click();return {cardsEnabled:[...document.querySelectorAll(".evidence-card")].every(x=>!x.disabled),dialogue:document.getElementById("storyBeat")?.textContent}})()');
    if(!action.cardsEnabled||!action.dialogue)throw Error("Windows interaction did not advance stage.");
+   fs.appendFileSync(path.join(out,"WINDOWS_QA_STAGE.txt"),"FIRST_SCREEN_CAPTURED "+JSON.stringify(before)+"\n");
    const after=await screenshot(win,path.join(out,"windows-1024x768-after-choice.png"),1024,768);
    fs.writeFileSync(path.join(out,"WINDOWS_QA.json"),JSON.stringify({
     status:"PASS",source:"Windows packaged Electron QA preview",appName:app.getName(),
