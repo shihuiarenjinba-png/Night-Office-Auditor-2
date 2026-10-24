@@ -1,0 +1,37 @@
+name: Three-case deduction browser screenshots
+on:
+  push:
+    branches:
+      - work/three-case-deduction-20261024
+    paths:
+      - 'deduction-campaign.html'
+      - 'deduction-campaign.css'
+      - 'src/deduction-campaign*.js'
+      - 'tests/three-case-browser-smoke.cjs'
+      - '.github/workflows/three-case-browser.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+      - name: Install Chromium automation dependency
+        run: npm install --no-save --no-package-lock --no-audit --no-fund playwright@1.56.1
+      - name: Install test browser
+        run: npx playwright install --with-deps chromium
+      - name: Verify case selection, deduction, submissions and ending
+        run: node tests/three-case-browser-smoke.cjs
+      - name: Upload evidence and screenshot artifacts
+        if: ${{ always() && hashFiles('three-case-review/**') != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: three-case-deduction-ui-${{ github.sha }}
+          path: three-case-review/
+          retention-days: 14
+          if-no-files-found: error
