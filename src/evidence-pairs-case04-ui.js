@@ -1,152 +1,161 @@
-/* CASE04 evidence cards UI: a card never flips back once opened. */
+/* CASE04: independent deductions, no premature answer reveal. */
 (()=>{"use strict";
-const G=globalThis.EvidencePairsCase04,KEY="night-office-case04-card-budget:v2";
+const G=globalThis.EvidencePairsCase04,KEY="night-office-case04-player-deductions:v3";
 const $=id=>document.getElementById(id);
 const make=(tag,text,cls)=>{const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(cls)e.className=cls;return e;};
-let state=G.initial(),selected=[],feedback="",hintVisible=false,blocked=false,tab="board",lastDialogue=null,audio=null;
+let state=G.initial(),selected=[],message="",showHint=false,blocked=false,audio=null;
 function sound(){
- try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;
- audio??=new A();if(audio.state==="suspended")void audio.resume();
- const t=audio.currentTime,o=audio.createOscillator(),g=audio.createGain();
- o.type="triangle";o.frequency.setValueAtTime(360,t);o.frequency.exponentialRampToValueAtTime(515,t+.055);
- g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.045,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.07);
- o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+.08);
- }catch{/* Sound must not stop any game action. */}
+ try{
+  const A=window.AudioContext||window.webkitAudioContext;if(!A)return;
+  audio??=new A();if(audio.state==="suspended")void audio.resume();
+  const t=audio.currentTime,o=audio.createOscillator(),g=audio.createGain();
+  o.type="triangle";o.frequency.setValueAtTime(310,t);o.frequency.exponentialRampToValueAtTime(455,t+.055);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.04,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+.08);
+  o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+.085);
+ }catch{/* Sound must never interrupt navigation. */}
 }
-function save(){
+function persist(){
  if(blocked)return;
- try{localStorage.setItem(KEY,JSON.stringify(state));}catch{feedback="この環境では自動保存できません。操作は続けられます。";}
-}
-function showTab(id,play=true){
- if(!["board","notes","report"].includes(id))return;
- tab=id;
- for(const screen of document.querySelectorAll("[data-screen]"))screen.hidden=screen.dataset.screen!==id;
- for(const button of document.querySelectorAll("[data-tab]"))button.setAttribute("aria-selected",String(button.dataset.tab===id));
- if(play)sound();
+ try{localStorage.setItem(KEY,JSON.stringify(state));}
+ catch{message="このブラウザでは自動保存できません。操作は続けられます。";}
 }
 function run(action){
- try{state=G.apply(state,action);save();return true;}
- catch(err){feedback=err.message;return false;}
+ try{state=G.apply(state,action);persist();return true;}
+ catch(e){message=e.message;render();return false;}
 }
-function pick(id){
- const v=G.view(state),card=v.cards.find(c=>c.id===id);
- if(blocked||v.verdict||!card||card.matched)return;
- if(!card.revealed){
-  if(!v.canReveal){feedback="調査枠は6枚までです。開封済みのカードで関連付けるか、追加調査の報告に進んでください。";render();return;}
+function tab(id,withSound=true){
+ if(!["board","notes","report"].includes(id))return;
+ for(const screen of document.querySelectorAll("[data-screen]"))screen.hidden=screen.dataset.screen!==id;
+ for(const t of document.querySelectorAll("[data-tab]"))t.setAttribute("aria-selected",String(t.dataset.tab===id));
+ if(withSound)sound();
+}
+function cardClick(id){
+ const v=G.view(state),c=v.cards.find(c=>c.id===id);
+ if(blocked||v.submitted||!c)return;
+ if(!c.revealed){
+  if(v.remaining===0){message="開封上限は6枚です。確認済みの資料で推理するか、追加調査を報告してください。";render();return;}
   if(!run({type:"reveal",id}))return;
-  feedback="資料「"+card.title+"」を公開しました。残り"+G.view(state).slotsRemaining+"枚。内容は手帳に残ります。";
+  message=c.title+"を開きました（残り"+G.view(state).remaining+"枚）。文書内容を自分で確認してください。";
  }
  if(selected.includes(id))selected=selected.filter(x=>x!==id);
  else if(selected.length<2)selected.push(id);
- else feedback="いまは2枚選択中です。「関連付ける」を押すか、選択を解除してください。";
+ else {selected=[id];message="選択を入れ替えました。もう1枚選んでください。";}
  render();
 }
-function connect(){
+function assign(){
  if(selected.length!==2)return;
- const v=G.view(state),previous=v.progress,ids=[...selected];
- if(run({type:"link",a:ids[0],b:ids[1]})){
-  const next=G.view(state);
-  if(next.progress>previous){
-   const p=G.PAIRS.find(x=>x.cards.includes(ids[0])&&x.cards.includes(ids[1]));
-   lastDialogue=p;
-   feedback="つながりました！「"+p.question+"」が解明されました。"+(next.progress===3?" 3件すべて解明。監査報告タブへ進めます。":"");
-   sound();
-  }else{lastDialogue=null;feedback="この2枚だけでは疑問を説明できません。同じ発注番号・時刻・承認権限のどれを照合するか考えましょう。失敗しても減点はありません。";}
+ const target=$("targetQuestion").value;
+ if(run({type:"assign",question:target,a:selected[0],b:selected[1]})){
+  selected=[];message="選んだ2枚を根拠として記録しました。正しいかは報告後まで判定しません。";
+  render();tab("notes");
  }
- selected=[];render();
 }
-function report(choice){
- if(!confirm("現在の証拠から「"+({clear:"問題なし",review:"追加調査",escalate:"問題あり"}[choice]||"")+"」と報告しますか？ この案件の調査は終了します。"))return;
- if(run({type:"report",choice})){selected=[];feedback="監査報告を記録しました。";showTab("report");}
- render();
+function choose(q,answer){
+ if(run({type:"choose",question:q,answer})){
+  message="仮説を記録しました。提出するまで変更可能です。";
+  render();
+ }
+}
+function report(verdict){
+ const name={clear:"問題なし",escalate:"問題あり",review:"追加調査"}[verdict];
+ if(!confirm("「"+name+"」として監査報告を提出しますか？ 提出後に初めて根拠と正誤を照合します。"))return;
+ if(run({type:"report",verdict})){selected=[];message="監査報告を提出しました。";render();tab("report");}
 }
 function render(){
- const v=G.view(state);
- $("progress").textContent=v.progress+" / "+v.total;
+ const v=G.view(state),ready=v.questions.filter(q=>!!q.assigned&&!!q.answer).length;
  $("budget").textContent=v.opened+" / "+v.cardLimit;
- $("budgetHint").textContent=v.slotsRemaining===0?"調査枠を使い切りました":"残り"+v.slotsRemaining+"枚／全"+v.cardCount+"枚";
- $("cardCount").textContent=String(v.cardCount);
- $("cardLimit").textContent=String(v.cardLimit);
- $("remaining").textContent=v.verdict?"報告済み":v.progress===3?"全項目解明":"未解明 "+(v.total-v.progress)+"件";
+ $("openSlots").textContent="残り"+v.remaining+"枚";
+ $("remaining").textContent="回答準備 "+ready+" / 3";
  $("selectedCount").textContent="選択中 "+selected.length+" / 2";
- $("instruction").textContent=v.progress===3?"証拠がつながりました。『監査報告』タブから結論を選んでください。":
-  selected.length===2?"2枚を選択しました。「証拠を関連付ける」を押してください。":
-  selected.length===1?"もう1枚、関係がありそうな資料を選択してください。":v.suggestions;
- $("connect").disabled=blocked||!!v.verdict||selected.length!==2;
- $("hint").disabled=blocked||!!v.verdict||v.progress===3;
- $("clearSelection").disabled=!selected.length;
- const qs=$("questions");qs.replaceChildren();
+ $("instruction").textContent=v.submitted?"報告済みです。答え合わせは監査報告で確認できます。":
+  selected.length===2?"2枚を選びました。下で『どの疑問の根拠か』を指定してください。":
+  selected.length===1?"根拠になると思うもう1枚を選んでください。":
+  v.remaining===0?"開封枠を使い切りました。既存の資料で推理するか追加調査を報告してください。":
+  "資料名を手がかりに、関係がありそうなカードを開いてください。";
+ $("connect").disabled=blocked||v.submitted||selected.length!==2;
+ $("hint").disabled=blocked||v.submitted;
+ $("clearSelection").disabled=selected.length===0;
+ const questions=$("questions");questions.replaceChildren();
  for(const q of v.questions){
-  const panel=make("div",undefined,q.completed?"question done":"question");
-  panel.append(make("small",q.completed?"✓ 解明済み":"? まだ分からない"),make("strong",q.question));
-  if(q.completed)panel.append(make("p",q.answer));
-  qs.append(panel);
+  const ready=!!q.assigned&&!!q.answer;
+  const el=make("article",undefined,ready?"question done":"question");
+  el.append(make("small",v.submitted?"報告済み":ready?"仮説を記録済み":q.assigned?"根拠2枚を登録済み":"未回答"),
+    make("strong",q.question));
+  if(q.assigned)el.append(make("p","根拠資料："+q.assigned.join(" / ")));
+  if(q.answer)el.append(make("p","選んだ答え："+q.options.find(o=>o.id===q.answer).label));
+  questions.append(el);
  }
  const deck=$("cards");deck.replaceChildren();
  for(const c of v.cards){
-  const card=make("button",undefined,"evidence-card"+(c.revealed?" open":"")+(selected.includes(c.id)?" selected":"")+(c.matched?" matched":""));
-  card.type="button";card.disabled=blocked||!!v.verdict||c.matched||(!c.revealed&&!v.canReveal);
-  card.setAttribute("aria-pressed",String(selected.includes(c.id)));
-  card.setAttribute("aria-label",(c.revealed?"公開済み":"未公開")+" "+c.title);
-  card.append(make("small",c.documentId+" / "+c.category),make("strong",c.title),
-   make("div",c.revealed?c.detail:"クリックして資料を読む。内容はそのまま残ります。","face"),
-   make("span",c.matched?"✓ 関連付け済み":selected.includes(c.id)?"● 選択中":c.revealed?"公開済み・選択できます":v.canReveal?"未開封（残り枠あり）":"調査枠の上限","card-status"));
-  card.addEventListener("click",()=>pick(c.id));deck.append(card);
+  const el=make("button",undefined,"evidence-card"+(c.revealed?" open":"")+(selected.includes(c.id)?" selected":""));
+  el.type="button";el.disabled=blocked||v.submitted||(!c.revealed&&v.remaining===0);
+  el.setAttribute("aria-pressed",String(selected.includes(c.id)));
+  el.setAttribute("aria-label",(c.revealed?"公開済み":"未公開")+" "+c.title);
+  el.append(make("small",c.documentId+" / "+c.category),make("strong",c.title),
+   make("div",c.revealed?c.detail:"未開封。内容を調べるにはクリックします。","face"),
+   make("span",selected.includes(c.id)?"● 選択中":c.revealed?"公開済み":v.remaining?"未開封":"調査枠の上限","card-status"));
+  el.addEventListener("click",()=>cardClick(c.id));deck.append(el);
  }
- const hint=$("hintContent");hint.hidden=!hintVisible||v.progress===3;hint.replaceChildren();
- if(!hint.hidden){
-  const x=v.hints[0],pair=G.PAIRS.find(p=>p.question===x.question);
-  const types=pair.cards.map(id=>G.CARDS.find(c=>c.id===id).category);
-  hint.append(make("strong","調査助手のヒント（枠の消費なし）"),
-    make("p","未解明の疑問：「"+x.question+"」"),
-    make("p","資料名の種類に注目しましょう。「"+types.join("」と「")+"」の資料を比べると手がかりがあります。"),
-    make("p","資料の中身は、実際にカードを開くまで表示されません。"));
- }
- $("feedback").textContent=feedback||"";
- const speech=$("characterLine");speech.hidden=!lastDialogue;speech.replaceChildren();
- if(lastDialogue)speech.append(make("strong",lastDialogue.character),make("p",lastDialogue.line));
+ $("feedback").textContent=message;
+ const hint=$("hintContent");hint.hidden=!showHint||v.submitted;hint.replaceChildren();
+ if(!hint.hidden)hint.append(make("strong","調査助手からの助言"),
+  make("p","『発注に承認記録があるか』『処理の前後』『承認した人の権限』という3つの疑問を、資料の種類と番号で比べてください。"),
+  make("p","カードの中身や正解になる組み合わせは、ここでは教えません。"));
  const notes=$("findings");notes.replaceChildren();
- for(const q of v.questions){
-  const item=make("article",undefined,q.completed?"finding":"finding empty");
-  item.append(make("h3",q.question));
-  if(q.completed)item.append(make("p",q.answer),make("p","照合した資料："+q.documentIds.join(" / ")));
-  else item.append(make("p","未解明。関係する2枚の証拠を見つけてください。"));
+ for(const [i,q] of v.questions.entries()){
+  const item=make("article",undefined,"finding"+(q.assigned?"":" empty"));
+  item.append(make("h3",(i+1)+". "+q.question));
+  item.append(make("p",q.assigned?"あなたが指定した資料："+q.assigned.join(" / "):"根拠にする資料2枚を、カード画面で登録してください。"));
+  if(q.assigned){
+   const choices=make("div",undefined,"answer-choices");
+   for(const op of q.options){
+    const label=make("label",undefined,"answer-option"+(op.id===q.answer?" chosen":""));
+    const radio=make("input");radio.type="radio";radio.name="answer-"+q.id;radio.value=op.id;
+    radio.checked=q.answer===op.id;radio.disabled=blocked||v.submitted;
+    radio.addEventListener("change",()=>choose(q.id,op.id));
+    label.append(radio,make("span",op.label));choices.append(label);
+   }
+   item.append(make("h4","あなたの答えを選ぶ（3択）"),choices,
+    make("p","まだ正誤は表示されません。根拠資料と回答は提出前に変更できます。","note"));
+  }else item.append(make("p","この疑問の回答は、根拠資料を登録すると選べます。","note"));
   notes.append(item);
  }
- const canConclude=v.progress===3&&!v.verdict&&!blocked;
- $("reportGuide").textContent=v.verdict?"報告済み。実際に確認した証拠と、報告後に分かった事実を区別して表示します。":
- canConclude?"3つの疑問を証拠で解明しました。結論を選んでください。":
- "未解明 "+(3-v.progress)+"件。調査枠の残りは"+v.slotsRemaining+"枚。断定せず『追加調査』と報告することもできます。";
- for(const btn of document.querySelectorAll("[data-verdict]"))
-  btn.disabled=blocked||!!v.verdict||(btn.dataset.verdict!=="review"&&!canConclude);
- const final=$("finalReport");final.hidden=!v.verdict;final.replaceChildren();
- if(v.verdict){
-  final.append(make("h3",v.verdict==="clear"?"CASE CLOSED — 正当な承認を立証":"監査報告の結果"),
-   make("p","あなたが解明した項目："+v.progress+" / 3。公開資料："+v.opened+" / "+v.cardLimit+"枚。"),
-   make("p",v.ending));
-  if(v.verdict==="review"){
-   final.append(make("h4","報告時点で不足していた根拠"));
-   for(const q of v.questions.filter(q=>!q.completed))final.append(make("p","未確認："+q.question));
-   final.append(make("h4","報告後の正式照会で判明した事実"));
-  }else final.append(make("h4","今回の証拠のつながり"));
-  final.append(make("p",v.finalReason),
-   make("p","仲村は紙の空欄で迷い、島袋は公演を心配していました。記録と署名を確認することで、人物の発言ではなく根拠に基づいた判断ができます。"));
+ $("reportGuide").textContent=v.submitted?"報告が完了しました。以下に回答と根拠の照合結果を表示します。":
+ ready===3?"3件すべての根拠資料と答えがそろいました。最終結論を提出してください。":
+ "3件中"+ready+"件の回答を用意しました。結論の断定には3件すべて必要です。証拠不足の場合は『追加調査』を選択できます。";
+ for(const el of document.querySelectorAll("[data-verdict]"))el.disabled=blocked||v.submitted||(el.dataset.verdict!=="review"&&!v.readyToConclude);
+ const final=$("finalReport");final.hidden=!v.submitted;final.replaceChildren();
+ if(v.submitted){
+  final.append(make("h3","監査報告と答え合わせ"),
+   make("p","あなたの報告："+({clear:"問題なし",review:"追加調査",escalate:"問題あり"}[v.report])),
+   make("p",v.outcome));
+  for(const e of v.evaluation){
+   const item=make("section",undefined,"graded-question");
+   item.append(make("h4",e.question),make("p","あなたの選択："+e.chosenLabel),
+     make("p","正しい回答："+e.correctLabel),
+     make("p","提出した資料："+(e.documents.join(" / ")||"なし")),
+     make("p","照合に必要な資料："+e.requiredDocuments.join(" / ")),
+     make("p","なぜそうなるか："+e.explanation),
+     make("strong",e.substantiated?"証拠と回答が一致":"証拠または回答が不十分"));
+   final.append(item);
+  }
  }
- for(const x of document.querySelectorAll('[data-tab="report"]'))x.textContent=v.verdict?"監査報告 ✓":"監査報告";
 }
 function init(){
- try{const raw=localStorage.getItem(KEY);if(raw){const candidate=JSON.parse(raw);G.view(candidate);state=candidate;}}
- catch{blocked=true;feedback="以前の記録を読み込めません。元のデータは保持しています。『最初から』で新たに始められます。";}
- for(const b of document.querySelectorAll("[data-tab]"))b.addEventListener("click",()=>showTab(b.dataset.tab));
- $("connect").addEventListener("click",connect);
- $("hint").addEventListener("click",()=>{hintVisible=!hintVisible;render();});
- $("clearSelection").addEventListener("click",()=>{selected=[];feedback="選択を解除しました。";render();});
+ try{const raw=localStorage.getItem(KEY);if(raw){const s=JSON.parse(raw);G.view(s);state=s;}}
+ catch{blocked=true;message="以前の記録を読み込めません。元データは保持しています。初期化を選ぶと新しく始められます。";}
+ const select=$("targetQuestion");for(const q of G.QUESTIONS){const o=make("option",q.question);o.value=q.id;select.append(o);}
+ for(const t of document.querySelectorAll("[data-tab]"))t.addEventListener("click",()=>tab(t.dataset.tab));
+ $("connect").addEventListener("click",assign);
+ $("hint").addEventListener("click",()=>{showHint=!showHint;render();});
+ $("clearSelection").addEventListener("click",()=>{selected=[];message="選択を解除しました。";render();});
  for(const b of document.querySelectorAll("[data-verdict]"))b.addEventListener("click",()=>report(b.dataset.verdict));
- $("reset").addEventListener("click",()=>{if(!confirm("この試作の証拠と報告をすべて初期化しますか？ 本編のセーブには影響しません。"))return;
-   try{localStorage.removeItem(KEY);}catch{}
-   state=G.initial();blocked=false;feedback="事件を初期化しました。";selected=[];hintVisible=false;lastDialogue=null;showTab("board");render();
+ $("reset").addEventListener("click",()=>{
+  if(!confirm("この試作の調査記録を消して初めからやり直しますか？（本編のセーブには影響しません）"))return;
+  try{localStorage.removeItem(KEY);}catch{}
+  state=G.initial();blocked=false;selected=[];message="初期化しました。";showHint=false;tab("board");render();
  });
- showTab("board",false);render();
+ tab("board",false);render();
 }
 document.addEventListener("DOMContentLoaded",init);
 })();
