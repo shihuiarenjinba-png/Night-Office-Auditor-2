@@ -47,6 +47,14 @@ const site=url.pathToFileURL(path.resolve("deduction-campaign.html")).href;
    ["取消処理の記録","元伝票の起票ログ","cancel","起票と取消の相殺で説明できる"]
   ],"clear");
   await screenshot("02-case01-proven.png");
+  await p.reload();
+  assert.equal(await p.locator("#campaignProgress").innerText(),"1 / 3","campaign must resume after browser restart");
+  assert.equal(await caseButton("04").isEnabled(),true);
+  await caseButton("04").click();
+  assert.match(await p.locator("#storyBeat").innerText(),/仲村|前回/);
+  await caseButton("05").click();
+  assert.match(await p.locator("#storyBeat").innerText(),/島袋|仲村/);
+
   assert.equal(await caseButton("04").isEnabled(),true);
   assert.equal(await caseButton("05").isEnabled(),true);
 
@@ -81,6 +89,11 @@ const site=url.pathToFileURL(path.resolve("deduction-campaign.html")).href;
   await q.locator(".verdict.review").click();
   assert.equal(await q.locator("#reportResult").isVisible(),true);
   assert.equal(await q.locator(".case-item").filter({hasText:"CASE 04"}).isEnabled(),true);
+  const overflow=await q.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2);
+  assert.equal(overflow,false,"1024px view should not overflow horizontally");
+  await q.reload();
+  assert.equal(await q.locator("#campaignProgress").innerText(),"1 / 3");
+
   await q.screenshot({path:path.join(output,"07-1024-limited-evidence-review.png"),fullPage:true});
 
   assert.deepEqual(errors,[]);assert.deepEqual(requests,[]);
