@@ -44,7 +44,7 @@
   for(const h of v.history){const row=make("div",undefined,"event");row.append(make("strong",h.speaker),make("span",h.text));hist.append(row);}
   const persons=$("people");persons.replaceChildren();
   for(const [id,p] of Object.entries(G.people)){
-   const box=make("article",undefined,"person");box.append(make("strong",p.name+" / "+p.role),make("p",p.trait));
+   const box=make("article",undefined,"person");const hidden=id==="kinjo"&&v.stage!=="policy"&&!v.history.some(h=>h.speaker==="金城");box.append(make("strong",hidden?"人物ファイル未開示 / 関係者の権限は未確認":p.name+" / "+p.role),make("p",hidden?"署名欄から、誰が承認権限を持つかはまだ判断できません。":p.trait));
    if(id!=="kinjo")box.append(make("p","関係："+tone(v.staff[id])));
    persons.append(box);
   }
