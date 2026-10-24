@@ -61,7 +61,7 @@ function spec(seed,index){
 }
 function initial(seed=20261024){integer(seed,"seed",1,2147483647);return {version:VERSION,seed,index:0,score:0,trust:60,history:[],active:{checked:[],minutesLeft:BUDGET},complete:false};}
 function checkedCost(list){if(!Array.isArray(list)||list.length>2)throw Error("調査記録が多すぎます。");if(new Set(list).size!==list.length)throw Error("調査記録に重複があります。");let sum=0;for(const id of list){const s=SOURCES.find(x=>x.id===id);if(!s)throw Error("調査記録の種類が不正です。");sum+=s.cost;}if(sum>BUDGET)throw Error("制限時間を超えた調査記録です。");return sum;}
-function recordFor(seed,index,choice,checked){const c=spec(seed,index),ci=CHOICES.findIndex(x=>x.id===choice);if(ci<0)throw Error("報告の種類が不正です。");const effort=checkedCost(checked),supported=checked.length===2&&checked.includes(SOURCES[c.key].id);
+function recordFor(seed,index,choice,checked){const c=spec(seed,index),ci=CHOICES.findIndex(x=>x.id===choice);if(ci<0)throw Error("報告の種類が不正です。");const effort=checkedCost(checked),supported=checked.length===2&&PROOFBOOK[index].required.every(id=>checked.includes(id));
  const unsupportedPenalty=choice!=="review"&&!supported?65:0;
  return {index,choice,checked:[...checked],truth:c.truth,scoreDelta:RATING[c.truth][ci]-2*effort-unsupportedPenalty,trustDelta:TRUST[c.truth][ci],effort,supported};}
 function validate(raw){
