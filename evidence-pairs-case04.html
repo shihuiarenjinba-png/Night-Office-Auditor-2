@@ -1,10 +1,9 @@
 <!doctype html>
 <html lang="ja">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none';script-src 'self';style-src 'self';connect-src 'none';img-src 'self' data:;object-src 'none';frame-src 'none';base-uri 'none'">
-<title>深夜監査室 — 証拠をめくってつなぐ CASE04</title>
+<title>深夜監査室 — CASE04 自分で推理する証拠カード</title>
 <link rel="stylesheet" href="./evidence-pairs-case04.css">
 <script defer src="./src/evidence-pairs-case04.js"></script>
 <script defer src="./src/evidence-pairs-case04-ui.js"></script>
@@ -13,62 +12,67 @@
 <main class="frame">
 <header class="header">
  <div>
-  <p class="eyebrow">NIGHT OFFICE AUDITOR / EVIDENCE BOARD</p>
+  <p class="eyebrow">NIGHT OFFICE AUDITOR / PLAYER'S DEDUCTION</p>
   <h1>深夜監査室 <span>CASE 04</span></h1>
-  <p class="summary">42万円の発注書に、承認者の署名がない。これは無断発注なのか？</p>
+  <p class="summary">42万円の発注書に署名がない。これは無断発注なのか？</p>
  </div>
- <div class="case-status"><small>証拠を開ける枠</small><strong id="budget">0 / 6</strong><span id="budgetHint">全8枚から6枚まで</span></div>
+ <div class="case-status"><small>カード開封</small><strong id="budget">0 / 6</strong><span>全8枚から選択</span></div>
 </header>
 <section class="opening">
  <p class="opening-label">事件の始まり</p>
- <p>明朝の公演を控えた架空のイベント会社。現場主任は機材を止めたくない。経理担当は承認が見つからず、支払いを迷っている。</p>
- <p><strong>あなたの役目は犯人を当てることではなく、資料を組み合わせて「承認されたのか」を確かめること。</strong></p>
+ <p>明朝の公演を控えたイベント会社。経理は空白の署名欄を気にし、現場は発注を止めるなと訴える。</p>
+ <p><strong>資料は事実だけを示します。どの資料が根拠になるか、最後の結論が何かは、あなたが選んでください。</strong></p>
 </section>
-<nav class="tabs" aria-label="事件の画面">
- <button type="button" data-tab="board" aria-selected="true">証拠をめくる</button>
- <button type="button" data-tab="notes" aria-selected="false">分かったこと</button>
+<div class="player-guide" aria-label="遊び方">
+ <span>1. 8枚から最大6枚めくる</span><span>2. 疑問ごとに証拠2枚を指定</span><span>3. 回答を3択から選ぶ</span><span>4. 監査報告して答え合わせ</span>
+</div>
+<nav class="tabs" aria-label="ゲーム画面">
+ <button type="button" data-tab="board" aria-selected="true">資料を調べる</button>
+ <button type="button" data-tab="notes" aria-selected="false">推理・回答</button>
  <button type="button" data-tab="report" aria-selected="false">監査報告</button>
 </nav>
-<section class="questions" aria-label="解決したい疑問">
- <div class="section-head"><h2>解決するために、まだ分からないこと</h2><span id="remaining">未解明 3件</span></div>
- <p class="investigation-brief">資料は<span id="cardCount">8</span>枚。めくれるのは<span id="cardLimit">6</span>枚まで。<strong>どの疑問を解くのに何の資料が必要か</strong>、タイトルを見て選んでください。</p>
+<section class="questions" aria-label="今回解決する疑問">
+ <div class="section-head"><h2>解明しなくてはいけない3つの疑問</h2><span id="remaining">回答準備 0 / 3</span></div>
  <div id="questions" class="question-list"></div>
 </section>
-<section data-screen="board" class="screen" aria-label="証拠カード">
- <div class="section-head"><h2>資料を選んでめくる</h2><small>解明 <span id="progress">0 / 3</span></small></div>
- <p class="howto"><b>遊び方</b>：全8枚から最大6枚を選んでめくります。<strong>資料名はすべて見える</strong>ので、解決する疑問に合うものを選びましょう。開いた資料は残り、2枚の関連付けは何度試しても枠を消費しません。<strong>枠を使い切っても「追加調査」として事件を締められます。</strong></p>
+<section class="screen" data-screen="board" aria-label="証拠カード">
+ <div class="section-head"><h2>裏面には記録された事実だけ</h2><small>開封枠 <span id="openSlots">残り6枚</span></small></div>
+ <p class="howto"><b>資料名はすべて見えます。</b> 開きたい資料を選んでください。一度開けたカードは残ります。カードの中に正解文は書かれていません。</p>
  <div id="cards" class="cards"></div>
  <div class="controls">
-  <div><strong id="selectedCount">選択中 0 / 2</strong><p id="instruction">解きたい疑問から、資料名を見て選びましょう。</p></div>
+  <div><strong id="selectedCount">選択中 0 / 2</strong><p id="instruction">まず、どの疑問を解決したいか考えてカードをめくりましょう。</p></div>
   <div class="control-buttons">
-   <button type="button" id="hint" class="secondary">迷ったらヒント</button>
+   <button type="button" id="hint" class="secondary">調査のヒント</button>
    <button type="button" id="clearSelection" class="secondary">選択解除</button>
-   <button type="button" id="connect" class="primary" disabled>証拠を関連付ける</button>
   </div>
+ </div>
+ <div class="assignment-box">
+  <label for="targetQuestion">選んだ2枚を、どの疑問の根拠として提出しますか？</label>
+  <select id="targetQuestion"></select>
+  <button type="button" id="connect" class="primary" disabled>この疑問の根拠として登録</button>
+  <p>登録の正誤はまだ表示しません。提出するまでは何度でも組み合わせを変えられます。</p>
  </div>
  <div id="hintContent" class="hint" hidden></div>
  <div id="feedback" class="feedback" aria-live="polite"></div>
- <div id="characterLine" class="character-line" hidden aria-live="polite"></div>
 </section>
-<section data-screen="notes" class="screen" hidden aria-label="監査手帳">
- <div class="section-head"><h2>解明したつながりと、その根拠</h2></div>
- <p class="howto">ここには「自分が実際につないだ証拠」だけを記録します。未確認の真相は表示しません。</p>
+<section class="screen" data-screen="notes" hidden aria-label="推理手帳と選択式回答">
+ <div class="section-head"><h2>自分の推理をまとめる</h2><small>回答を確定するまで正誤は非表示</small></div>
+ <p class="howto">各疑問に資料2枚を登録すると、回答を3択から選べます。選択した答えは提出まで変更できます。</p>
  <div id="findings" class="findings"></div>
 </section>
-<section data-screen="report" class="screen" hidden aria-label="監査報告">
- <div class="section-head"><h2>証拠がそろったら、結論を報告</h2></div>
- <p id="reportGuide" class="howto">3つの疑問をすべて解明できれば断定できます。証拠が足りなければ「追加調査」を選べます。</p>
- <div id="reportOptions" class="report-options">
-  <button type="button" data-verdict="clear" disabled><b>問題なし</b><span>3つの疑問をすべて解決してから断定</span></button>
-  <button type="button" data-verdict="review"><b>追加調査</b><span>不明点を記録し、正式な追加資料照会に進む</span></button>
-  <button type="button" data-verdict="escalate" disabled><b>問題あり</b><span>3つの疑問をすべて解決してから断定</span></button>
+<section class="screen" data-screen="report" hidden aria-label="最終報告">
+ <div class="section-head"><h2>結論を自分で決める</h2><small>提出すると初めて正誤を開示します</small></div>
+ <p id="reportGuide" class="howto">すべての疑問に資料2枚と回答を用意すると「問題なし」「問題あり」を報告できます。証拠が不足したら「追加調査」を選べます。</p>
+ <div class="report-options">
+  <button type="button" data-verdict="clear" disabled><b>問題なし</b><span>正式な承認があったと判断する</span></button>
+  <button type="button" data-verdict="review"><b>追加調査</b><span>根拠不足を報告する</span></button>
+  <button type="button" data-verdict="escalate" disabled><b>問題あり</b><span>無断発注と判断する</span></button>
  </div>
  <div id="finalReport" class="final-report" hidden aria-live="polite"></div>
 </section>
 <footer>
- <span>独立した有料版UIの操作試作。登場人物・書類は架空です。本編24案件のセーブには影響しません。</span>
- <div><button type="button" id="reset">この事件を最初から</button><a href="./branch-case04.html">従来の会話分岐UIと比較する →</a></div>
+ <span>独立した有料版の第4案件試作。人物・会社・記録は架空。本編・低価格版のセーブには影響しません。</span>
+ <div><button type="button" id="reset">この事件を最初から</button><a href="./index.html">既存の有料版を見る →</a></div>
 </footer>
 </main>
-</body>
-</html>
+</body></html>
