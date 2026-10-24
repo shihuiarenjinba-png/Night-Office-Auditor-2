@@ -73,6 +73,9 @@ function render(){
  }
  $("chapter").textContent=c.chapter;$("caseTitle").textContent="CASE "+c.id+" — "+c.title;
  $("location").textContent=c.location;$("opening").textContent=c.opening;
+ $("storyBeat").textContent=c.story.follow;
+ $("teamConsequence").textContent=[c.story.tension,c.story.callback].filter(Boolean).join(" ");
+
  $("cardTotal").textContent=c.cards.length+"枚";$("revealCount").textContent=c.opened+" / 6";
  $("answerCount").textContent=c.readiness+" / 2";
  $("status").textContent=c.complete?"報告済み":c.approach?"調査中":"聞取り前";
