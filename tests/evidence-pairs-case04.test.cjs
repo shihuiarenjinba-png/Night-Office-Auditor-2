@@ -5,7 +5,7 @@ const reveal=(s,id)=>G.apply(s,{type:"reveal",id});
 const link=(s,a,b)=>G.apply(s,{type:"link",a,b});
 test("eight named cards are fixed, and just six may be opened",()=>{
  assert.equal(G.CARDS.length,8);assert.equal(G.PAIRS.length,3);assert.equal(G.CARD_LIMIT,6);
- assert.equal(new Set(G.CARDS.map(c=>c.id)).size,6);
+ assert.equal(new Set(G.CARDS.map(c=>c.id)).size,8);
  assert.equal(G.view(G.initial()).progress,0);
  assert.equal(G.view(G.initial()).cards.filter(c=>c.revealed).length,0);
  assert.deepEqual(G.initial(),G.initial());
