@@ -34,9 +34,23 @@
 <section data-screen="scene" class="sheet scene">
  <div class="case-stamp">04</div><p class="chapter">CHAPTER I / NIGHT SHIFT</p>
  <h2>署名のない42万円</h2>
- <p>架空のイベント制作会社。明朝の公演を控えた深夜、追加照明の発注書から承認者の署名が消えていた。</p>
+ <p>架空のイベント制作会社。明朝の公演を控えた深夜、追加照明の発注書には、承認者の署名が記されていなかった。</p>
  <p>現場主任は「発注を止めるな」と迫り、経理担当は「責任を押し付けられる」と怯えている。管理部門は『記録を照合するまでは、何も断定できない』とだけ答えた。</p>
- <div class="manila"><strong>最初に何を確認する？</strong><span>発注番号 → 承認の時刻 → 承認者の権限。この3点をつなぐのが目標です。誰にどう話すかで、資料の入手経路と人間関係が変わります。</span></div>
+ <div class="case-investigation-board" aria-label="事件で判明していることと未解明のこと">
+   <section class="facts-board">
+     <h3><span class="board-marker">✓</span> 現時点で分かっていること</h3>
+     <ul id="caseKnown" class="known-list" aria-live="polite">
+       <li>照明機材の発注額は42万円。</li><li>紙の承認欄は空白。</li><li>公演は明日の朝。</li>
+     </ul>
+   </section>
+   <section class="unknown-board">
+     <h3><span class="board-marker">?</span> 解決するために、まだ分からないこと</h3>
+     <div id="caseUnknowns" class="unknown-list" aria-live="polite">
+       <p>承認記録、承認された時刻、承認権限を確認する必要があります。</p>
+     </div>
+   </section>
+ </div>
+ <p class="scene-hint" id="sceneLead">次に何を調べるべきか、未解明の項目から確認してください。</p>
  <button type="button" id="start" class="primary">人物との対話を始める <span>→</span></button>
 </section>
 <section data-screen="interview" class="sheet dialog" hidden>
