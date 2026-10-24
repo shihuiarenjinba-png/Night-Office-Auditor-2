@@ -21,3 +21,17 @@ Planning shell only. No paid-edition story content has been added yet. Do not tr
 ## Safety rule
 
 Do not silently copy Store identity/version metadata from the low-price edition. The paid edition must receive its own confirmed Store packaging decision before submission.
+
+## Expanded prototype implemented
+
+Work branch: `work/paid-story-ui-20261024`
+
+- 24 fictional cases across four chapters
+- each case has a fictional Okinawa-area location, story hook, and auditor note
+- chapter-specific signature lines / 決め台詞
+- five real screens: Case / Evidence / Report / Result / Save
+- synthesized local tab-switch sound (no downloaded audio asset)
+- isolated save key and save schema v2; it does not overwrite the low-price edition save
+- offline CSP: no network calls from the game renderer
+
+This is a gameplay/UI prototype, not a Store submission package. Store identity, version and packaging remain intentionally unassigned for the expanded edition.
