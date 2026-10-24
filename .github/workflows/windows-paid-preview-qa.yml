@@ -51,8 +51,14 @@ jobs:
           $exe = (Get-ChildItem -Path qa-dist -Filter NightOfficePaid_QA_UNSIGNED.exe -Recurse -File | Select-Object -First 1).FullName
           if (-not $exe) { throw "Windows EXE missing" }
           $target = (Resolve-Path windows-qa).Path
-          & $exe "--qa-capture=$target"
-          if ($LASTEXITCODE -ne 0) { throw "Windows packaged app runtime QA failed" }
+          $env:ELECTRON_ENABLE_LOGGING = "1"
+          & $exe "--qa-capture=$target" "--enable-logging"
+          $exitCode = $LASTEXITCODE
+          Get-ChildItem windows-qa | ForEach-Object { Write-Host "QA_FILE $($_.Name)" }
+          foreach ($report in @('WINDOWS_START_ERROR.txt', 'WINDOWS_QA_ERROR.txt', 'WINDOWS_QA_STAGE.txt')) {
+            if (Test-Path "windows-qa/$report") { Get-Content "windows-qa/$report" }
+          }
+          if ($exitCode -ne 0) { throw "Windows packaged app runtime QA failed: exit $exitCode" }
           if (-not (Test-Path windows-qa/WINDOWS_QA.json)) { throw "QA record missing" }
           if (-not (Test-Path windows-qa/windows-1280x720.png)) { throw "1280 screenshot missing" }
           if (-not (Test-Path windows-qa/windows-1024x768-after-choice.png)) { throw "1024 screenshot missing" }
