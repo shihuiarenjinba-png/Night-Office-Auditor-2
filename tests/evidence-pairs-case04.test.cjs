@@ -1,102 +1,121 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
 const G=require("../src/evidence-pairs-case04.js");
-const reveal=(s,id)=>G.apply(s,{type:"reveal",id});
-const link=(s,a,b)=>G.apply(s,{type:"link",a,b});
-test("eight named cards are fixed, and just six may be opened",()=>{
- assert.equal(G.CARDS.length,8);assert.equal(G.PAIRS.length,3);assert.equal(G.CARD_LIMIT,6);
- assert.equal(new Set(G.CARDS.map(c=>c.id)).size,8);
- assert.equal(G.view(G.initial()).progress,0);
- assert.equal(G.view(G.initial()).cards.filter(c=>c.revealed).length,0);
- assert.deepEqual(G.initial(),G.initial());
-});
-test("flipped evidence remains visible and never returns to face down",()=>{
- let s=G.initial();s=reveal(s,"A");let v=G.view(s);
- assert.equal(v.cards.find(c=>c.id==="A").revealed,true);
- s=reveal(s,"B");v=G.view(s);
- assert.equal(v.cards.filter(c=>c.revealed).length,2);
- assert.equal(v.questions.filter(x=>x.completed).length,0);
- assert.throws(()=>reveal(s,"A"),/不正な証拠めくり/);
-});
-test("wrong matches do not erase cards, subtract time, or block progress",()=>{
- let s=G.initial();s=reveal(s,"A");s=reveal(s,"E");s=link(s,"A","E");
- const v=G.view(s);assert.equal(v.wrong,1);assert.equal(v.opened,2);assert.equal(v.progress,0);
- assert.equal(v.cards.filter(c=>c.revealed).length,2);
- s=reveal(s,"B");s=link(s,"A","B");
- assert.equal(G.view(s).progress,1);
- assert.equal(G.view(s).wrong,1);
-});
-test("each of three linked pairs resolves precisely one question with a reason",()=>{
+const act=(s,a)=>G.apply(s,a),open=(s,id)=>act(s,{type:"reveal",id});
+const pair=(s,q,a,b)=>act(s,{type:"assign",question:q,a,b});
+const choice=(s,q,answer)=>act(s,{type:"choose",question:q,answer});
+const full=()=>{
  let s=G.initial();
- for(const id of ["A","E","C","F","B","D"])s=reveal(s,id);
- assert.equal(G.view(s).opened,6);assert.equal(G.view(s).slotsRemaining,0);assert.throws(()=>reveal(s,"G"),/使い切り/);
- for(const [a,b] of [["D","C"],["A","B"],["F","E"]]){
-  s=link(s,a,b);
-  const v=G.view(s);
-  assert.equal(v.questions.filter(q=>q.completed).length,v.progress);
-  assert.ok(v.questions.filter(q=>q.completed).every(q=>q.answer&&q.documentIds.length===2));
+ for(const id of ["A","B","C","D","E","F"])s=open(s,id);
+ for(const [q,a,b,answer] of [["approval","A","B","yes"],["timing","C","D","before"],["authority","E","F","authorized"]]){
+  s=pair(s,q,a,b);s=choice(s,q,answer);
  }
- assert.equal(G.view(s).progress,3);
- assert.equal(G.view(s).hints.length,0);
- assert.throws(()=>link(s,"A","B"),/解明済み/);
+ return s;
+};
+test("eight fixed cards, six-reveal cap, and three explicit questions",()=>{
+ const v=G.view(G.initial());assert.equal(G.VERSION,3);
+ assert.equal(v.cards.length,8);assert.equal(v.cardLimit,6);assert.equal(v.questions.length,3);
+ assert.equal(v.opened,0);assert.equal(v.readyToConclude,false);
 });
-test("report is unavailable until all 3 links are resolved",()=>{
- const s=G.initial();assert.throws(()=>G.apply(s,{type:"report",choice:"clear"}),/断定/);
- let a=s;for(const c of G.CARDS.filter(x=>!["G","H"].includes(x.id)))a=reveal(a,c.id);
- for(const p of G.PAIRS)a=link(a,p.cards[0],p.cards[1]);
- for(const choice of ["clear","review","escalate"]){
-  const end=G.apply(a,{type:"report",choice}),v=G.view(end);
-  assert.equal(v.verdict,choice);assert.ok(v.ending.length>30);
-  assert.match(v.finalReason,/23分前/);assert.throws(()=>reveal(end,"Z"),/報告後/);
+test("card backs have raw observations and no solution text",()=>{
+ const v=G.view(G.initial());
+ for(const c of v.cards){assert.equal(c.revealed,false);assert.ok(c.category);assert.ok(c.title);}
+ const descriptions=G.CARDS.map(x=>x.detail).join(" ");
+ assert.doesNotMatch(descriptions,/正式な承認|正当な承認|だから|すなわち|無断発注ではない|真相は/);
+ assert.match(descriptions,/20:48/);assert.match(descriptions,/20:25/);
+});
+test("revealing cards never returns an answer, grading, outcome, or conclusion",()=>{
+ let s=G.initial();
+ s=open(s,"A");s=open(s,"B");
+ const v=G.view(s);
+ assert.equal(v.opened,2);
+ assert.equal(v.evaluation,null);assert.equal(v.outcome,null);assert.equal(v.submitted,false);
+ assert.equal(v.questions[0].assigned,null);assert.equal(v.questions[0].answer,null);
+ assert.ok(!Object.hasOwn(v,"finalReason"));
+ assert.throws(()=>open(s,"A"),/無効/);
+});
+test("player assigns a pair to a specific question without immediate validation",()=>{
+ let s=G.initial();s=open(s,"A");s=open(s,"E");
+ s=pair(s,"timing","A","E");
+ let v=G.view(s);
+ assert.deepEqual(v.questions[1].assignedIds,["A","E"]);
+ assert.equal(v.questions[1].answer,null);assert.equal(v.evaluation,null);
+ s=choice(s,"timing","before");
+ v=G.view(s);
+ assert.equal(v.questions[1].answer,"before");
+ assert.equal(v.evaluation,null);
+ assert.equal(v.readyToConclude,false);
+});
+test("player can change evidence pair and choice before submission",()=>{
+ let s=G.initial();for(const id of ["A","B","C","D"])s=open(s,id);
+ s=pair(s,"approval","A","C");s=choice(s,"approval","no");
+ s=pair(s,"approval","A","B");s=choice(s,"approval","yes");
+ const v=G.view(s);assert.deepEqual(v.questions[0].assignedIds,["A","B"]);
+ assert.equal(v.questions[0].answer,"yes");
+ assert.equal(v.evaluation,null);
+});
+test("assignments require two distinct revealed documents and choosing requires assignment",()=>{
+ let s=G.initial();s=open(s,"A");
+ assert.throws(()=>pair(s,"approval","A","B"),/開いた2枚/);
+ assert.throws(()=>pair(s,"approval","A","A"),/開いた2枚/);
+ assert.throws(()=>choice(s,"approval","yes"),/先に/);
+});
+test("opening limit cannot be exceeded even by tampering save actions",()=>{
+ let s=G.initial();for(const id of ["A","B","C","D","E","F"])s=open(s,id);
+ assert.equal(G.view(s).remaining,0);assert.throws(()=>open(s,"G"),/6枚/);
+ const corrupted={...s,actions:[...s.actions,{type:"reveal",id:"H"}]};
+ assert.throws(()=>G.view(corrupted),/6枚/);
+});
+test("full correct hypothesis is graded only after explicit final report",()=>{
+ const s=full();let v=G.view(s);
+ assert.equal(v.readyToConclude,true);assert.equal(v.evaluation,null);
+ s.actions.forEach(a=>assert.notEqual(a.type,"report"));
+ const done=act(s,{type:"report",verdict:"clear"});v=G.view(done);
+ assert.equal(v.submitted,true);assert.equal(v.report,"clear");
+ assert.equal(v.substantiated,true);assert.equal(v.evaluation.length,3);
+ assert.ok(v.evaluation.every(x=>x.substantiated&&x.explanation.length>20));
+ assert.match(v.outcome,/立証/);
+ assert.throws(()=>open(done,"G"),/操作履歴/);
+});
+test("guessing a correct choice with wrong evidence does not prove the claim",()=>{
+ let s=G.initial();for(const id of ["A","B","C","D","E","F"])s=open(s,id);
+ for(const [q,a,b,answer] of [["approval","A","C","yes"],["timing","C","D","before"],["authority","E","F","authorized"]]){
+  s=pair(s,q,a,b);s=choice(s,q,answer);
  }
+ assert.equal(G.view(s).evaluation,null);
+ const result=G.view(act(s,{type:"report",verdict:"clear"}));
+ assert.equal(result.substantiated,false);
+ assert.equal(result.evaluation[0].correctAnswer,true);
+ assert.equal(result.evaluation[0].correctEvidence,false);
 });
-test("save log replay is deterministic and invalid IDs cannot fabricate progress",()=>{
- let s=G.initial();s=reveal(s,"A");s=reveal(s,"B");s=link(s,"A","B");
+test("wrong choice gets explained after report, but not beforehand",()=>{
+ let s=full();s=choice(s,"approval","no");
+ const before=G.view(s);assert.equal(before.evaluation,null);
+ const after=G.view(act(s,{type:"report",verdict:"clear"}));
+ assert.equal(after.evaluation[0].correctEvidence,true);
+ assert.equal(after.evaluation[0].correctAnswer,false);
+ assert.match(after.evaluation[0].correctLabel,/存在/);
+});
+test("limited-information player can file an explicit review without guessing",()=>{
+ let s=G.initial();for(const id of ["A","C","E","G","H","B"])s=open(s,id);
+ assert.throws(()=>act(s,{type:"report",verdict:"clear"}),/すべての疑問/);
+ const review=G.view(act(s,{type:"report",verdict:"review"}));
+ assert.equal(review.submitted,true);assert.equal(review.report,"review");
+ assert.ok(review.evaluation.every(x=>!x.substantiated));
+ assert.match(review.outcome,/追加資料/);
+});
+test("state and grading are deterministic on JSON replay, old saves are isolated",()=>{
+ let s=full();s=act(s,{type:"report",verdict:"clear"});
  assert.deepEqual(G.view(JSON.parse(JSON.stringify(s))),G.view(s));
- assert.throws(()=>G.view({...s,version:22}),/不正/);
- assert.throws(()=>G.view({...s,actions:[{type:"link",a:"A",b:"B"}]}),/未公開/);
- assert.throws(()=>G.view({...s,actions:[{type:"reveal",id:"Q"}]}),/不正/);
+ assert.throws(()=>G.view({...s,version:2}),/形式/);
 });
-test("standalone UI keeps real tabs and isolated local-save key without remote resources",()=>{
+test("HTML presents choice controls and cannot show grading before submission",()=>{
  const html=fs.readFileSync("evidence-pairs-case04.html","utf8");
- const js=fs.readFileSync("src/evidence-pairs-case04-ui.js","utf8");
+ const ui=fs.readFileSync("src/evidence-pairs-case04-ui.js","utf8");
  for(const id of ["board","notes","report"]){assert.ok(html.includes('data-tab="'+id+'"'));assert.ok(html.includes('data-screen="'+id+'"'));}
- for(const id of ["questions","cards","connect","hint","findings","finalReport"]){assert.ok(html.includes('id="'+id+'"'));}
- assert.match(html,/connect-src 'none'/);assert.match(html,/まだ分からないこと/);
- assert.match(js,/night-office-case04-card-budget:v2/);assert.match(js,/AudioContext/);
- assert.doesNotMatch(js,/fetch\(|XMLHttpRequest|sendBeacon/);
- assert.doesNotThrow(()=>new vm.Script(js));
-});
-
-test("extra scene-context cards can consume slots without resolving an authorization question",()=>{
- let s=G.initial();
- for(const id of ["A","B","C","D","G","H"])s=reveal(s,id);
- assert.equal(G.view(s).opened,6);assert.equal(G.view(s).slotsRemaining,0);
- assert.equal(G.view(s).cards.length,8);
- assert.equal(G.view(s).cards.filter(x=>!x.revealed).length,2);
- assert.throws(()=>reveal(s,"E"),/使い切り/);
- s=link(s,"A","B");s=link(s,"C","D");
- assert.equal(G.view(s).progress,2);
- assert.throws(()=>G.apply(s,{type:"report",choice:"clear"}),/断定/);
- const review=G.apply(s,{type:"report",choice:"review"});
- assert.equal(G.view(review).verdict,"review");
- assert.match(G.view(review).ending,/資料|立証/);
- assert.throws(()=>reveal(review,"E"),/報告後/);
-});
-test("reveal budget is robust to tampered saves",()=>{
- let s=G.initial();for(const id of ["A","B","C","D","E","F"])s=reveal(s,id);
- const malicious={...s,actions:[...s.actions,{type:"reveal",id:"G"}]};
- assert.throws(()=>G.view(malicious),/使い切り/);
-});
-test("a legitimate player can end early by requesting further investigation",()=>{
- const s=G.apply(G.initial(),{type:"report",choice:"review"});
- const v=G.view(s);
- assert.equal(v.progress,0);assert.equal(v.opened,0);assert.equal(v.verdict,"review");
- assert.match(v.ending,/資料|調査/);
-});
-test("revealing arbitrary contextual cards never changes the predetermined solution",()=>{
- let s=G.initial();s=reveal(s,"G");s=reveal(s,"H");
- const v=G.view(s);
- assert.equal(v.progress,0);assert.equal(v.total,3);
- assert.equal(v.questions.length,3);assert.match(v.finalReason,/23分前/);
+ for(const id of ["targetQuestion","connect","cards","findings","finalReport"]){assert.ok(html.includes('id="'+id+'"'));}
+ assert.match(ui,/type="radio"/);assert.match(ui,/night-office-case04-player-deductions:v3/);
+ assert.match(ui,/if\(v\.submitted\)/);assert.match(html,/connect-src 'none'/);
+ assert.doesNotMatch(ui,/fetch\s*\(|XMLHttpRequest|sendBeacon/);
+ assert.doesNotThrow(()=>new vm.Script(ui));
 });
