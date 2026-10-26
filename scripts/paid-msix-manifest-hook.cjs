@@ -22,18 +22,18 @@ function rewrite(xml,env){
  const gate=validate(env);
  if(!gate.ready)throw Error("Owner-confirmed paid Identity is required: "+gate.errors.join(" | "));
  const tag=singleMatch(xml,/<Identity\b[^>]*>/g,"Identity")[0];
- if(attribute(tag,"Name")!==env.NIGHT_PAID_IDENTITY_NAME)throw Error("MSIX Identity Name mismatch");
- if(attribute(tag,"Publisher")!==env.NIGHT_PAID_PUBLISHER)throw Error("MSIX Publisher mismatch");
+ if(attribute(tag,"Name")!==gate.value.identityName)throw Error("MSIX Identity Name mismatch");
+ if(attribute(tag,"Publisher")!==gate.value.publisher)throw Error("MSIX Publisher mismatch");
  const props=singleMatch(xml,/<Properties\b[^>]*>([\s\S]*?)<\/Properties>/g,"Properties")[1];
  const display=singleMatch(props,/<DisplayName\b[^>]*>([\s\S]*?)<\/DisplayName>/g,"Properties/DisplayName")[1];
  const publisher=singleMatch(props,/<PublisherDisplayName\b[^>]*>([\s\S]*?)<\/PublisherDisplayName>/g,"Properties/PublisherDisplayName")[1];
- if(decode(display.trim())!==env.NIGHT_PAID_STORE_DISPLAY_NAME)throw Error("MSIX DisplayName mismatch");
- if(decode(publisher.trim())!==env.NIGHT_PAID_PUBLISHER_DISPLAY_NAME)throw Error("MSIX PublisherDisplayName mismatch");
+ if(decode(display.trim())!==gate.value.storeDisplayName)throw Error("MSIX DisplayName mismatch");
+ if(decode(publisher.trim())!==gate.value.publisherDisplayName)throw Error("MSIX PublisherDisplayName mismatch");
  const visual=singleMatch(xml,/<(?:[A-Za-z0-9_-]+:)?VisualElements\b[^>]*>/g,"VisualElements")[0];
- if(attribute(visual,"DisplayName")!==env.NIGHT_PAID_STORE_DISPLAY_NAME)throw Error("MSIX VisualElements DisplayName mismatch");
+ if(attribute(visual,"DisplayName")!==gate.value.storeDisplayName)throw Error("MSIX VisualElements DisplayName mismatch");
  const validVersion=attribute(tag,"Version");
  if(!/^\d+\.\d+\.\d+\.\d+$/.test(validVersion))throw Error("MSIX original Version malformed");
- const updated=tag.replace(/\bVersion\s*=\s*(["'])(.*?)\1/,'Version="'+env.NIGHT_PAID_STORE_VERSION+'"');
+ const updated=tag.replace(/\bVersion\s*=\s*(["'])(.*?)\1/,'Version="'+gate.value.version+'"');
  if(updated===tag)throw Error("MSIX Version replacement failed");
  return xml.replace(tag,updated);
 }
