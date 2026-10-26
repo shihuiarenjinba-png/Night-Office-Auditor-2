@@ -37,9 +37,11 @@ function submitDecision(){
  if(!confirm("「"+label+"」と報告しますか？\n根拠："+(shown.join("・")||"追加照会")+"\n報告後に、記録の照合結果が開示されます。"))return;
  try{
   const out=G.decide(state,notebook.choice);
+  // Do not advance the campaign in memory until this decision is safely saved.
+  localStorage.setItem(KEY,JSON.stringify(out.state));
   state=out.state;lastReport=out.report;notice=out.report.correct?
    "監査報告を提出しました。":"報告を提出しました。資料照合の説明を確認してください。";
-  notebook=emptyNote();saveNote();persist();render();
+  notebook=emptyNote();saveNote();render();
   globalThis.OperationTabs?.open("result",{sound:true});
  }catch(e){notice=e.message;render();}
 }
@@ -94,7 +96,7 @@ function caseView(c){
  $("caseNo").textContent=String(c.caseNumber).padStart(2,"0");$("chapterLabel").textContent=c.chapter;$("caseTitle").textContent=c.title;$("locationLine").textContent="今夜の事件は、"+c.location+"で起きている。";$("caseStory").textContent=c.story;$("caseNote").textContent=c.note;$("signatureLine").textContent=c.signature;
 }
 function timer(c){const remain=recoveryBlocked||c.complete?0:c.minutesLeft;$("timerTitle").textContent=c.complete?"調査完了":"残り"+remain+"分";$("timerBar").value=remain;}
-function sources(c){const root=$("sources"),found=$("findings");root.replaceChildren();found.replaceChildren();if(recoveryBlocked||c.complete){root.append(el("p",recoveryBlocked?"保存記録の復旧が必要です。":"24件の調査は完了しました。","muted"));return;}for(const source of c.sources){const b=el("button",undefined,source.checked?"source checked":"source");b.type="button";b.disabled=!source.available||recoveryBlocked;b.append(el("strong",source.label),el("span",source.checked?"確認済み":source.available?"調査時間 "+source.cost+"分":"残り時間不足"));b.addEventListener("click",()=>{try{state=G.inspect(state,source.id).state;notice="";persist();render();}catch(e){notice=e.message;render();}});root.append(b);}if(!c.findings.length)found.append(el("p","まだ証拠を開いていません。何を調べるか選んでください。","muted"));for(const f of c.findings){const card=el("div",undefined,"finding");card.append(el("strong",f.title),el("small",f.reliability),el("p",f.detail));found.append(card);}}
+function sources(c){const root=$("sources"),found=$("findings");root.replaceChildren();found.replaceChildren();if(recoveryBlocked||c.complete){root.append(el("p",recoveryBlocked?"保存記録の復旧が必要です。":"24件の調査は完了しました。","muted"));return;}for(const source of c.sources){const b=el("button",undefined,source.checked?"source checked":"source");b.type="button";b.disabled=!source.available||recoveryBlocked;b.append(el("strong",source.label),el("span",source.checked?"確認済み":source.available?"調査時間 "+source.cost+"分":"残り時間不足"));b.addEventListener("click",()=>{try{const next=G.inspect(state,source.id).state;localStorage.setItem(KEY,JSON.stringify(next));state=next;notice="";render();}catch(e){notice="調査を保存できませんでした。"+e.message;render();}});root.append(b);}if(!c.findings.length)found.append(el("p","まだ証拠を開いていません。何を調べるか選んでください。","muted"));for(const f of c.findings){const card=el("div",undefined,"finding");card.append(el("strong",f.title),el("small",f.reliability),el("p",f.detail));found.append(card);}}
 function choices(c){
  const root=$("choices"),docRoot=$("selectedDocuments");
  root.replaceChildren();docRoot.replaceChildren();$("submitDecision").disabled=true;
