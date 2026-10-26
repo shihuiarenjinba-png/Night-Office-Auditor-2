@@ -1,4 +1,15 @@
-$ErrorActionPreference = 'Stop'
+﻿$ErrorActionPreference = 'Stop'
+$identityRecord = Get-Content -LiteralPath (Join-Path (Get-Location).Path 'store/partner-center-identity.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+$identityVersion = if ($identityRecord.storeVersion) { [string]$identityRecord.storeVersion } else { [string]$identityRecord.qaCandidateVersion }
+$storeVersionVerified = [bool]$identityRecord.storeVersion
+function Get-VerifiedSha256 {
+ param([Parameter(Mandatory=$true)][string]$Path)
+ $stream=[System.IO.File]::OpenRead($Path)
+ $sha=[System.Security.Cryptography.SHA256]::Create()
+ try { return ([System.BitConverter]::ToString($sha.ComputeHash($stream))).Replace("-","") }
+ finally { $stream.Dispose();$sha.Dispose() }
+}
+
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $out = Join-Path (Get-Location).Path 'dist-paid-msix-candidate'
 $sourceCommit = if ($env:SOURCE_GIT_COMMIT) { $env:SOURCE_GIT_COMMIT } else { $env:GITHUB_SHA }
@@ -18,20 +29,20 @@ foreach ($f in $files) {
     try { [xml]$xml = $reader.ReadToEnd() } finally { $reader.Dispose() }
     $identity = $xml.SelectSingleNode("//*[local-name()='Identity']")
     if ($null -eq $identity) { throw 'MSIX Identity element is missing' }
-    if ($identity.GetAttribute('Name') -cne $env:NIGHT_PAID_IDENTITY_NAME) { throw 'Identity Name mismatch' }
-    if ($identity.GetAttribute('Publisher') -cne $env:NIGHT_PAID_PUBLISHER) { throw 'Publisher mismatch' }
-    if ($identity.GetAttribute('Version') -cne $env:NIGHT_PAID_STORE_VERSION) { throw 'Store Version mismatch' }
+    if ($identity.GetAttribute('Name') -cne $identityRecord.identityName) { throw 'Identity Name mismatch' }
+    if ($identity.GetAttribute('Publisher') -cne $identityRecord.publisher) { throw 'Publisher mismatch' }
+    if ($identity.GetAttribute('Version') -cne $identityVersion) { throw 'Store Version mismatch' }
     $props = $xml.SelectSingleNode("//*[local-name()='Properties']")
     if ($null -eq $props) { throw 'Missing Properties element' }
     $display = $props.SelectSingleNode("*[local-name()='DisplayName']")
-    if ($null -eq $display -or $display.InnerText -cne $env:NIGHT_PAID_STORE_DISPLAY_NAME) { throw 'Store DisplayName mismatch' }
+    if ($null -eq $display -or $display.InnerText -cne $identityRecord.storeDisplayName) { throw 'Store DisplayName mismatch' }
     $publisherDisplay = $props.SelectSingleNode("*[local-name()='PublisherDisplayName']")
-    if ($null -eq $publisherDisplay -or $publisherDisplay.InnerText -cne $env:NIGHT_PAID_PUBLISHER_DISPLAY_NAME) { throw 'PublisherDisplayName mismatch' }
+    if ($null -eq $publisherDisplay -or $publisherDisplay.InnerText -cne $identityRecord.publisherDisplayName) { throw 'PublisherDisplayName mismatch' }
   } finally { $z.Dispose() }
 }
 $artifacts = @(Get-ChildItem -LiteralPath $out -File | Where-Object { $_.Extension -in @('.msix','.msixupload') })
 foreach ($f in $artifacts) {
-  $records += [ordered]@{ name = $f.Name; bytes = $f.Length; sha256 = (Get-FileHash -LiteralPath $f.FullName -Algorithm SHA256).Hash }
+  $records += [ordered]@{ name = $f.Name; bytes = $f.Length; sha256 = (Get-VerifiedSha256 -Path $f.FullName) }
 }
 $ledger = [ordered]@{
  status = 'INTERNAL_QA_UNSIGNED_MSIX_NOT_STORE_APPROVED'
@@ -40,12 +51,14 @@ $ledger = [ordered]@{
  workBranch = $env:GITHUB_REF_NAME
  sourceCommit = $sourceCommit
  workflowRunId = $env:GITHUB_RUN_ID
- storeId = $env:NIGHT_PAID_STORE_ID
- identityName = $env:NIGHT_PAID_IDENTITY_NAME
- publisher = $env:NIGHT_PAID_PUBLISHER
- publisherDisplayName = $env:NIGHT_PAID_PUBLISHER_DISPLAY_NAME
- storeDisplayName = $env:NIGHT_PAID_STORE_DISPLAY_NAME
- storePackageVersion = $env:NIGHT_PAID_STORE_VERSION
+ storeId = $identityRecord.storeId
+ identityName = $identityRecord.identityName
+ publisher = $identityRecord.publisher
+ publisherDisplayName = $identityRecord.publisherDisplayName
+ storeDisplayName = $identityRecord.storeDisplayName
+ packageVersion = $identityVersion
+ storePackageVersion = if ($storeVersionVerified) { $identityVersion } else { $null }
+ storePackageVersionStatus = if ($storeVersionVerified) { 'VERIFIED' } else { 'UNKNOWN_QA_ONLY_VERSION' }
  signed = $false
  realWindowsInstallationTested = $false
  wackCompleted = $false
