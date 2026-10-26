@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "repository": "shihuiarenjinba-png/Night-Office-Auditor-2",
+  "productTitle": "深夜監査室",
+  "edition": "24-case paid edition - owner supplied identity intended for separate game product",
+  "storeId": "9NJ0Q36BQ0G4",
+  "identityName": "OkinawaDesktopTools.13632C049648B",
+  "publisher": "CN=46263F21-A700-41DB-8C9B-114C22FB82FC",
+  "publisherDisplayName": "Okinawa Desktop Tools",
+  "packageFamilyName": "OkinawaDesktopTools.13632C049648B_j8yefg9jgfh58",
+  "storeDisplayName": "深夜監査室",
+  "verificationSource": "Owner-provided Partner Center product identity screenshot on 2026-10-26. Matches a separate identity from 12-case Night Office Auditor.",
+  "screenshotProductStatus": "In draft",
+  "storeVersion": null,
+  "storeVersionStatus": "UNKNOWN: not visible in owner-provided screenshot; do not treat QA candidate version as accepted Store version",
+  "qaCandidateVersion": "0.1.0.0",
+  "qaCandidateVersionSource": "Derivation from repository package.json version 0.1.0; INTERNAL_UNSIGNED_QA_ONLY; NEVER auto-upload",
+  "packageSid": null,
+  "status": "IDENTITY_VERIFIED_FROM_SCREENSHOT; MSIX_STORE_VERSION_NOT_VERIFIED",
+  "storeSubmission": "HOLD",
+  "notes": "Only use for internal unsigned build. Confirm product association, reserved version, artwork, signing, WACK and Partner Center before actual submission. Do not reuse NightOfficeAuditor 12-case SKU."
+}
