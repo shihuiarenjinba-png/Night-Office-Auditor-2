@@ -1,0 +1,76 @@
+name: Paid 24-case x64 MSIX candidate (identity-gated)
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - work/paid-24case-integration-20261024
+    paths:
+      - 'desktop/main.cjs'
+      - 'scripts/paid-msix-*.cjs'
+      - 'scripts/build-paid-msix.cjs'
+      - 'scripts/make-paid-msix-icons.cjs'
+      - 'scripts/verify-paid-msix.ps1'
+      - '.github/workflows/paid-msix-candidate.yml'
+      - 'index.html'
+      - 'styles.css'
+      - 'src/**'
+      - 'tests/**'
+permissions:
+  contents: read
+concurrency:
+  group: paid-24-msix-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source-and-conditional-msix:
+    runs-on: windows-latest
+    timeout-minutes: 65
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      SOURCE_GIT_COMMIT: ${{ github.sha }}
+      NIGHT_PAID_STORE_ID: ${{ vars.NIGHT_PAID_STORE_ID }}
+      NIGHT_PAID_IDENTITY_NAME: ${{ vars.NIGHT_PAID_IDENTITY_NAME }}
+      NIGHT_PAID_PUBLISHER: ${{ vars.NIGHT_PAID_PUBLISHER }}
+      NIGHT_PAID_PUBLISHER_DISPLAY_NAME: ${{ vars.NIGHT_PAID_PUBLISHER_DISPLAY_NAME }}
+      NIGHT_PAID_STORE_DISPLAY_NAME: ${{ vars.NIGHT_PAID_STORE_DISPLAY_NAME }}
+      NIGHT_PAID_STORE_VERSION: ${{ vars.NIGHT_PAID_STORE_VERSION }}
+      NIGHT_PAID_IDENTITY_OWNER_CONFIRMED: ${{ vars.NIGHT_PAID_IDENTITY_OWNER_CONFIRMED }}
+    steps:
+      - name: Checkout exact work-branch commit
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.16.0'
+      - name: Run the complete source and game regressions
+        run: npm test
+      - name: Gate independent paid-edition Identity without inventing any identifiers
+        id: identity
+        run: node scripts/paid-msix-preflight.cjs
+      - name: Upload explicit HOLD document when paid Identity is absent
+        if: ${{ steps.identity.outputs.ready != 'true' && success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: paid-24case-msix-identity-HOLD-${{ github.sha }}
+          path: dist-paid-msix-candidate/MSIX_BUILD_HOLD.json
+          retention-days: 14
+          if-no-files-found: error
+      - name: Install pinned Windows MSIX builder only after identity approval
+        if: ${{ steps.identity.outputs.ready == 'true' }}
+        run: npm install --no-save --no-package-lock --no-audit --no-fund electron@44.6.0 electron-builder@27.0.0-alpha.10
+      - name: Generate review-only icon files
+        if: ${{ steps.identity.outputs.ready == 'true' }}
+        run: node scripts/make-paid-msix-icons.cjs
+      - name: Build and verify independent x64 MSIX / source SHA / manifest / package SHA256
+        if: ${{ steps.identity.outputs.ready == 'true' }}
+        run: node scripts/build-paid-msix.cjs
+      - name: Upload actual source-matched unsigned paid MSIX candidate
+        if: ${{ steps.identity.outputs.ready == 'true' && success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: paid-24case-msix-QA_UNSIGNED-${{ github.sha }}
+          path: |
+            dist-paid-msix-candidate/*.msix
+            dist-paid-msix-candidate/*.msixupload
+            dist-paid-msix-candidate/MSIX_CANDIDATE_HANDOFF.json
+          retention-days: 14
+          if-no-files-found: error
