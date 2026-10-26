@@ -30,7 +30,7 @@ function prepare(env,root=path.resolve(__dirname,"..")){
   directories:{app:"build/paid-msix-app",output:"dist-paid-msix-candidate",buildResources:"build"},
   win:{target:[{target:"msix",arch:["x64"]}]},
   msix:{
-   applicationId:suffix,identityName:gate.value.identityName,publisher:gate.value.publisher,
+   applicationId:"Paid"+suffix,identityName:gate.value.identityName,publisher:gate.value.publisher,
    publisherDisplayName:gate.value.publisherDisplayName,
    displayName:gate.value.storeDisplayName,languages:["ja-JP"],
    createMsixupload:true,setBuildNumber:false,capabilities:["runFullTrust"]
