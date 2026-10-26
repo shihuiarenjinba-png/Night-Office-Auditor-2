@@ -25,7 +25,8 @@ function prepare(env,root=path.resolve(__dirname,"..")){
  const suffix=gate.value.identityName.split(".").pop().replace(/[^A-Za-z0-9]/g,"").toLowerCase();
  if(!suffix)throw Error("Invalid identity suffix");
  const config={
-  appId:"com.okinawadesktoptools."+suffix,productName:gate.value.storeDisplayName,asar:true,
+  appId:"com.okinawadesktoptools."+suffix,productName:gate.value.storeDisplayName,
+  electronVersion:"44.6.0",asar:true,
   directories:{app:"build/paid-msix-app",output:"dist-paid-msix-candidate",buildResources:"build"},
   win:{target:[{target:"msix",arch:["x64"]}]},
   msix:{
