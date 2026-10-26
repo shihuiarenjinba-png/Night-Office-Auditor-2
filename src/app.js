@@ -182,6 +182,31 @@ async function importSave(file){
   notice="セーブを読み込みました。";render();
  }catch(error){alert("セーブ読込に失敗しました："+error.message);}
 }
-function init(){state=load();loadNote();loadVoices();if(!recoveryBlocked)persist();render();$("submitDecision").addEventListener("click",submitDecision);$("nextCase").addEventListener("click",()=>{lastReport=null;render();globalThis.OperationTabs?.open("case",{sound:true});});$("export").addEventListener("click",exportSave);$("import").addEventListener("click",()=>$("savefile").click());$("savefile").addEventListener("change",e=>{const f=e.target.files[0];e.target.value="";void importSave(f);});$("reset").addEventListener("click",()=>{if(!confirm("24案件の進行を消して最初から始めますか？"))return;state=G.initial();lastReport=null;unreadableRaw=null;recoveryBlocked=false;notebook=emptyNote();saveNote();conversations=Array(24).fill(null);saveVoices();notice="新しい夜を始めました。";persist();render();globalThis.OperationTabs?.open("case",{sound:true});});}
+function init(){state=load();loadNote();loadVoices();if(!recoveryBlocked)persist();render();$("submitDecision").addEventListener("click",submitDecision);$("nextCase").addEventListener("click",()=>{lastReport=null;render();globalThis.OperationTabs?.open("case",{sound:true});});$("export").addEventListener("click",exportSave);$("import").addEventListener("click",()=>$("savefile").click());$("savefile").addEventListener("change",e=>{const f=e.target.files[0];e.target.value="";void importSave(f);});$("reset").addEventListener("click",()=>{if(!confirm("24案件の進行を消して最初から始めますか？"))return;
+ try{
+   const next=G.initial();
+   const blankNote={version:1,index:next.index,seed:next.seed,choice:null,docs:[]};
+   const blankVoices=Array(24).fill(null);
+   const writes=[
+    [NOTEKEY,JSON.stringify(blankNote)],
+    [VOICEKEY,JSON.stringify({seed:next.seed,choices:blankVoices})],
+    [KEY,JSON.stringify(next)]
+   ];
+   const previous=writes.map(([key])=>localStorage.getItem(key));
+   let written=0;
+   try{
+     for(const [key,value] of writes){localStorage.setItem(key,value);written++;}
+   }catch(error){
+     for(let i=written-1;i>=0;i--)try{
+       if(previous[i]===null)localStorage.removeItem(writes[i][0]);
+       else localStorage.setItem(writes[i][0],previous[i]);
+     }catch(_rollbackError){}
+     throw error;
+   }
+   state=next;notebook=blankNote;conversations=blankVoices;
+   lastReport=null;unreadableRaw=null;recoveryBlocked=false;
+   notice="新しい夜を始めました。";render();
+   globalThis.OperationTabs?.open("case",{sound:true});
+ }catch(error){notice="保存領域に書き込めないため、元の記録は変更しませんでした。";render();}});}
 document.addEventListener("DOMContentLoaded",init);
 })();
