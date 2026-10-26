@@ -1,51 +1,44 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict");
-const {validate}=require("../scripts/paid-msix-preflight.cjs");
+const {validate,readRecord}=require("../scripts/paid-msix-preflight.cjs");
 const {paint}=require("../scripts/make-paid-msix-icons.cjs");
 const {rewrite}=require("../scripts/paid-msix-manifest-hook.cjs");
-function example(){
- // Test-only values: NOT a real Store account, Identity or registration.
- return {
-  SOURCE_GIT_COMMIT:"a".repeat(40),NIGHT_PAID_IDENTITY_OWNER_CONFIRMED:"YES",
-  NIGHT_PAID_STORE_ID:"FAKETEST0000",
-  NIGHT_PAID_IDENTITY_NAME:"TestOnly.UnregisteredPaidEdition",
-  NIGHT_PAID_PUBLISHER:"CN=TestOnly-Not-A-Publisher",
-  NIGHT_PAID_PUBLISHER_DISPLAY_NAME:"Test-Only",
-  NIGHT_PAID_STORE_DISPLAY_NAME:"Test edition",
-  NIGHT_PAID_STORE_VERSION:"1.0.0.0"
- };
-}
-test("independent Store identity is mandatory for a paid MSIX",()=>{
- const e=validate({SOURCE_GIT_COMMIT:"a".repeat(40)});
- assert.equal(e.ready,false);
- assert.match(e.errors.join(" "),/NIGHT_PAID_IDENTITY_NAME/);
+const sha="a".repeat(40);
+const env=()=>({SOURCE_GIT_COMMIT:sha});
+const current=()=>readRecord();
+test("only source commit and owner-confirmed independent Identity may produce a QA-only candidate",()=>{
+ const unverified=validate({});assert.equal(unverified.ready,false);
+ const verified=validate(env());
+ assert.equal(verified.ready,true,verified.errors.join("\n"));
+ assert.equal(verified.storeVersionVerified,false,"screenshot does not show Store package version");
+ assert.equal(verified.value.identityName,"OkinawaDesktopTools.13632C049648B");
+ assert.equal(verified.value.storeId,"9NJ0Q36BQ0G4");
+ assert.equal(verified.value.version,"0.1.0.0");
 });
-test("cheap 12-case Identity and Store ID are rejected even if marked approved",()=>{
- const env=example();env.NIGHT_PAID_IDENTITY_NAME="OkinawaDesktopTools.NightOfficeAuditor";
- env.NIGHT_PAID_STORE_ID="9P6SQX67J3R9";
- assert.equal(validate(env).ready,false);
- assert.match(validate(env).errors.join(" "),/cannot be reused/);
+test("12-case identity and Store ID are refused even with a confirmed screenshot flag",()=>{
+ const record=current();
+ record.identityName="OkinawaDesktopTools.NightOfficeAuditor";
+ record.storeId="9P6SQX67J3R9";
+ const r=validate(env(),record);
+ assert.equal(r.ready,false);assert.match(r.errors.join(" "),/cannot be reused/);
 });
-test("Store Version and explicit owner confirmation must pass independently",()=>{
- const env=example();env.NIGHT_PAID_STORE_VERSION="1.0.0.3";
- assert.equal(validate(env).ready,false);
- env.NIGHT_PAID_STORE_VERSION="1.0.0.0";env.NIGHT_PAID_IDENTITY_OWNER_CONFIRMED="HOLD";
- assert.equal(validate(env).ready,false);
- env.NIGHT_PAID_IDENTITY_OWNER_CONFIRMED="YES";
- assert.equal(validate(env).ready,true);
+test("actions variables cannot override screenshot values, missing version cannot be promoted",()=>{
+ const r=validate({...env(),NIGHT_PAID_IDENTITY_NAME:"TestOnly.Fake"});
+ assert.equal(r.ready,false);assert.match(r.errors.join(" "),/conflicts/);
+ const b=validate({...env(),NIGHT_PAID_STORE_VERSION:"1.0.0.0"});
+ assert.equal(b.ready,false);assert.match(b.errors.join(" "),/without a verified reservation/);
+ const blocked=validate({...env(),NIGHT_PAID_IDENTITY_OWNER_CONFIRMED:"HOLD"});
+ assert.equal(blocked.ready,false);
 });
-test("manifest hook verifies exact Identity, both display names and approved Version",()=>{
- const input='<Package><Identity Name="TestOnly.UnregisteredPaidEdition" Publisher="CN=TestOnly-Not-A-Publisher" Version="0.1.0.0"/>'+
- '<Properties><DisplayName>Test edition</DisplayName><PublisherDisplayName>Test-Only</PublisherDisplayName></Properties>'+
- '<Applications><Application><uap:VisualElements DisplayName="Test edition"/></Application></Applications></Package>';
- const env=example(),output=rewrite(input,env);
- assert.match(output,/Version="1\.0\.0\.0"/);
- assert.throws(()=>rewrite(input,{...env,NIGHT_PAID_PUBLISHER:"CN=other"}),/Publisher mismatch/);
- assert.throws(()=>rewrite(input,{...env,NIGHT_PAID_STORE_DISPLAY_NAME:"Wrong title"}),/DisplayName mismatch/);
- assert.throws(()=>rewrite(input,{...env,NIGHT_PAID_PUBLISHER_DISPLAY_NAME:"Wrong publisher name"}),/PublisherDisplayName mismatch/);
- assert.throws(()=>rewrite(input.replace('VisualElements DisplayName="Test edition"','VisualElements DisplayName="Wrong title"'),env),/VisualElements DisplayName mismatch/);
+test("manifest hook checks Identity, product display names and QA-only version",()=>{
+ const input='<Package><Identity Name="OkinawaDesktopTools.13632C049648B" Publisher="CN=46263F21-A700-41DB-8C9B-114C22FB82FC" Version="0.1.0.0"/>'+
+ '<Properties><DisplayName>深夜監査室</DisplayName><PublisherDisplayName>Okinawa Desktop Tools</PublisherDisplayName></Properties>'+
+ '<Applications><Application><uap:VisualElements DisplayName="深夜監査室"/></Application></Applications></Package>';
+ const output=rewrite(input,env());assert.match(output,/Version="0\.1\.0\.0"/);
+ assert.throws(()=>rewrite(input,{...env(),NIGHT_PAID_IDENTITY_NAME:"Fake.Name"}),/conflicts/);
+ assert.throws(()=>rewrite(input.replace('VisualElements DisplayName="深夜監査室"','VisualElements DisplayName="Wrong"'),env()),/VisualElements DisplayName mismatch/);
 });
-test("candidate icons are valid PNG images with intended dimensions",()=>{
+test("candidate PNG assets have valid width and height",()=>{
  for(const [w,h] of [[44,44],[50,50],[150,150],[310,150]]){
   const png=paint(w,h);assert.equal(png.subarray(0,8).toString("hex"),"89504e470d0a1a0a");
   assert.equal(png.readUInt32BE(16),w);assert.equal(png.readUInt32BE(20),h);
