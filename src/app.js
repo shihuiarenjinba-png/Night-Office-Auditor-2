@@ -5,9 +5,9 @@ let state=null,lastReport=null,unreadableRaw=null,recoveryBlocked=false,notice="
 const el=(tag,text,cls)=>{const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;};
 function load(){let raw=null;try{raw=localStorage.getItem(KEY);return raw?G.validate(JSON.parse(raw)):G.initial();}catch{unreadableRaw=raw;recoveryBlocked=true;notice="保存記録を確認できません。元データは保持しています。";return G.initial();}}
 function emptyNote(){return {version:1,index:state.index,seed:state.seed,choice:null,docs:[]};}
-function validateNote(raw){
- const valid=raw&&raw.version===1&&raw.index===state.index&&raw.seed===state.seed&&Array.isArray(raw.docs)&&raw.docs.length<=2&&new Set(raw.docs).size===raw.docs.length&&
- raw.docs.every(id=>state.active.checked.includes(id))&&[null,"clear","review","escalate"].includes(raw.choice);
+function validateNote(raw,expected=state){
+ const valid=raw&&raw.version===1&&raw.index===expected.index&&raw.seed===expected.seed&&Array.isArray(raw.docs)&&raw.docs.length<=2&&new Set(raw.docs).size===raw.docs.length&&
+ raw.docs.every(id=>expected.active.checked.includes(id))&&[null,"clear","review","escalate"].includes(raw.choice);
  return valid?{version:1,index:raw.index,seed:raw.seed,choice:raw.choice,docs:[...raw.docs]}:null;
 }
 function loadNote(){
@@ -142,7 +142,46 @@ function history(){const root=$("history");root.replaceChildren();if(!state.hist
 function render(){const c=G.current(state);stats(c);caseView(c);witness(c);timer(c);sources(c);choices(c);result();history();$("warning").textContent=notice;}
 function download(name,raw){const url=URL.createObjectURL(new Blob([raw],{type:"application/json"})),a=el("a");a.href=url;a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function exportSave(){if(recoveryBlocked&&unreadableRaw===null){alert("元データを取得できません。");return;}download(recoveryBlocked?"night-office-expanded-unreadable.json":"night-office-expanded-case-"+state.index+".json",recoveryBlocked?unreadableRaw:JSON.stringify({schema:G.VERSION,state,notebook,conversations},null,2));}
-async function importSave(file){if(!file)return;try{if(file.size>500000)throw Error("セーブファイルが大きすぎます。");const payload=JSON.parse(await file.text());if(payload.schema!==G.VERSION)throw Error("対応していないセーブバージョンです。");const next=G.validate(payload.state);if(!confirm("現在の進行状況を読み込んだ記録で置き換えますか？"))return;state=next;lastReport=null;unreadableRaw=null;recoveryBlocked=false;notebook=emptyNote();const restored=payload.notebook?validateNote(payload.notebook):null;if(restored)notebook=restored;saveNote();conversations=validateVoices(payload.conversations)||Array(24).fill(null);saveVoices();notice="セーブを読み込みました。";persist();render();}catch(e){alert("セーブ読込に失敗しました："+e.message);}}
+async function importSave(file){
+ if(!file)return;
+ try{
+  if(file.size>500000)throw Error("セーブファイルが大きすぎます。");
+  const payload=JSON.parse(await file.text());
+  if(payload.schema!==G.VERSION)throw Error("対応していないセーブバージョンです。");
+  const next=G.validate(payload.state);
+  const note=payload.notebook===undefined?
+    {version:1,index:next.index,seed:next.seed,choice:null,docs:[]}:
+    validateNote(payload.notebook,next);
+  if(!note)throw Error("調査メモの内容が本編セーブと一致しません。");
+  const voice=payload.conversations===undefined?Array(24).fill(null):validateVoices(payload.conversations);
+  if(!voice)throw Error("会話記録の形式が不正です。");
+  if(!confirm("現在の進行状況を読み込んだ記録で置き換えますか？"))return;
+
+  // Validate all three data sets first. Write the primary campaign LAST,
+  // so a partial auxiliary failure never switches the user's active case.
+  const writes=[
+   [NOTEKEY,JSON.stringify(note)],
+   [VOICEKEY,JSON.stringify({seed:next.seed,choices:voice})],
+   [KEY,JSON.stringify(next)]
+  ];
+  const previous=writes.map(([key])=>localStorage.getItem(key));
+  let written=0;
+  try{
+   for(const [key,value] of writes){localStorage.setItem(key,value);written++;}
+  }catch(error){
+   for(let i=written-1;i>=0;i--){
+    try{
+     if(previous[i]===null)localStorage.removeItem(writes[i][0]);
+     else localStorage.setItem(writes[i][0],previous[i]);
+    }catch(_rollbackError){}
+   }
+   throw Error("保存領域への書込みに失敗したため、読込を中止しました。元データを確認してください。");
+  }
+  state=next;lastReport=null;unreadableRaw=null;recoveryBlocked=false;
+  notebook=note;conversations=voice;
+  notice="セーブを読み込みました。";render();
+ }catch(error){alert("セーブ読込に失敗しました："+error.message);}
+}
 function init(){state=load();loadNote();loadVoices();if(!recoveryBlocked)persist();render();$("submitDecision").addEventListener("click",submitDecision);$("nextCase").addEventListener("click",()=>{lastReport=null;render();globalThis.OperationTabs?.open("case",{sound:true});});$("export").addEventListener("click",exportSave);$("import").addEventListener("click",()=>$("savefile").click());$("savefile").addEventListener("change",e=>{const f=e.target.files[0];e.target.value="";void importSave(f);});$("reset").addEventListener("click",()=>{if(!confirm("24案件の進行を消して最初から始めますか？"))return;state=G.initial();lastReport=null;unreadableRaw=null;recoveryBlocked=false;notebook=emptyNote();saveNote();conversations=Array(24).fill(null);saveVoices();notice="新しい夜を始めました。";persist();render();globalThis.OperationTabs?.open("case",{sound:true});});}
 document.addEventListener("DOMContentLoaded",init);
 })();
