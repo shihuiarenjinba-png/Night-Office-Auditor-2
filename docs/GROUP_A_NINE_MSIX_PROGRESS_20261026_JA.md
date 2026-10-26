@@ -56,3 +56,9 @@ ZIPダウンロード不要。GitHub Actions artifactで保存する。
 3. 9製品一括の最終引継ぎ書に Run/Job/Artifact/Source SHA/MSIX SHA/Manifest/未実施の正式Store工程を集約。
 4. コード担当に移すのは、Windows実機への導入と更新、Store署名/必要な検査、Partner Center照合と価格・画像・審査申請。
 5. 現時点で **7/9 内部MSIX候補確認。最終引継ぎ HOLD。**
+
+## 6. 所有者提供のPartner Center画面との照合（2026-10-26）
+- **EKIDEN MANAGER**（`game-stadium`）: 提示画像のIdentity Name `OkinawaDesktopTools.EKIDENMANAGER`、Store ID `9NL1HLJRFQ39`、Publisher `CN=46263F21-A700-41DB-8C9B-114C22FB82FC`、Publisher Display Name `Okinawa Desktop Tools` は既存の `store/partner-center-identity.json` と一致。MSIX Run 40266118805 のIdentity Nameとも一致。**このIdentityはLUCK LAB用ではない。**
+- **Night Office Auditor**（`NightOfficeAuditor`、12案件版）: 提示画像のIdentity Name `OkinawaDesktopTools.NightOfficeAuditor`、Store ID `9P6SQX67J3R9`、同じPublisherとDisplay Nameは既存の `store/partner-center-identity.json` と一致。MSIX Run 40257821361 と一致。**24案件有料版 `Night-Office-Auditor-2` のIdentityではない。**
+- この画像で確認できた2製品はいずれも**7件の既存MSIX生成済み群**に含まれる。残るLUCK LABおよび24案件版の正式な独立Identityは未確認で、MSIX生成HOLDを維持。
+- 成功済み7製品のソースHEAD/Artifact対応を壊さないため、生成済み製品のコードやIdentity JSONは変更せず、この中間台帳のみに照合結果を記載。
