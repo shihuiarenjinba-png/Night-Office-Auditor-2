@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 1,
+  "title": "Group A — 9 paid-first Windows game products",
+  "sourceAccount": "shihuiarenjinba-png",
+  "centralQualityIssue": "https://github.com/shihuiarenjinba-png/Night-Office-Auditor-2/issues/1",
+  "preferredCadence": "hourly",
+  "schedulerNote": "Do not simulate a subhour cadence by staggering multiple hourly ChatGPT tasks. A skill file does not create a scheduler.",
+  "rules": {
+    "allowedBranches": "Only the specifically named work branch for each repository",
+    "protectedBranches": [
+      "main",
+      "release",
+      "release/*"
+    ],
+    "gitHubOwnedScope": [
+      "code fixes",
+      "nonbreaking UI improvements",
+      "tests",
+      "Windows CI",
+      "QA_UNSIGNED MSIX",
+      "SHA and Manifest verification",
+      "handoff documentation"
+    ],
+    "notAuthorized": [
+      "Store upload or submission",
+      "signed-store-ready claims",
+      "security/billing/repository visibility changes",
+      "guessing Identity",
+      "modifying protected LUCK LAB original 66 files"
+    ],
+    "requireLatestHeadMatchedArtifact": true,
+    "statusValues": [
+      "PASS",
+      "HOLD",
+      "BLOCKED",
+      "NOT_TESTED"
+    ]
+  },
+  "products": [
+    {
+      "id": "business",
+      "repository": "SmallBusinessSimulator",
+      "branch": "work/ui-release-review-20261025",
+      "label": "Small Business Simulator",
+      "criticalPath": [
+        "onboarding",
+        "daily store",
+        "inventory",
+        "pricing",
+        "daily report",
+        "long-range economy",
+        "save restore"
+      ]
+    },
+    {
+      "id": "finance",
+      "repository": "finance-simulation",
+      "branch": "work/ui-release-review-20261025",
+      "label": "Finance Simulation",
+      "criticalPath": [
+        "trade quote",
+        "holdings",
+        "cash and fees",
+        "loans and repayment",
+        "120 day cycle",
+        "save restore"
+      ]
+    },
+    {
+      "id": "night12",
+      "repository": "NightOfficeAuditor",
+      "branch": "work/unified-qa-20261025",
+      "label": "Night Office Auditor (12)",
+      "criticalPath": [
+        "evidence",
+        "judgment",
+        "12 cases",
+        "case recovery",
+        "save restore",
+        "differentiation from 24"
+      ]
+    },
+    {
+      "id": "shop",
+      "repository": "UsedItemShopSimulator",
+      "branch": "work/ui-handoff-review-20261025",
+      "label": "Used Item Shop Simulator",
+      "criticalPath": [
+        "clock",
+        "buying and negotiating",
+        "inventory and repair",
+        "selling",
+        "month debt",
+        "long play",
+        "save and clock pairing"
+      ]
+    },
+    {
+      "id": "factory",
+      "repository": "FactoryInspectionSimulator",
+      "branch": "work/ui-handoff-review-20261025",
+      "label": "Factory Inspection Simulator",
+      "criticalPath": [
+        "order",
+        "inspection",
+        "labor",
+        "repair",
+        "delivery and quality",
+        "profit and reputation",
+        "90 day campaign"
+      ]
+    },
+    {
+      "id": "handover",
+      "repository": "game-new",
+      "branch": "work/unified-qa-20261025",
+      "label": "Handover Room",
+      "criticalPath": [
+        "story",
+        "clue tab",
+        "branching choices",
+        "chapters and endings",
+        "replay",
+        "save corruption recovery"
+      ]
+    },
+    {
+      "id": "ekiden",
+      "repository": "game-stadium",
+      "branch": "work/unified-qa-20261025",
+      "label": "EKIDEN MANAGER",
+      "criticalPath": [
+        "training",
+        "roster",
+        "race",
+        "8 seasons",
+        "Japanese and English UI",
+        "reloaded career consistency"
+      ]
+    },
+    {
+      "id": "luck",
+      "repository": "game",
+      "branch": "work/unified-qa-20261025",
+      "label": "LUCK LAB",
+      "criticalPath": [
+        "seven mini games",
+        "virtual credits",
+        "credit recovery",
+        "first use",
+        "age rating",
+        "restored save"
+      ],
+      "protectedFiles": "66 original source files — do not modify without explicit approval"
+    },
+    {
+      "id": "night24",
+      "repository": "Night-Office-Auditor-2",
+      "branch": "work/paid-24case-integration-20261024",
+      "label": "深夜監査室 24案件有料版",
+      "criticalPath": [
+        "24 case playthrough",
+        "evidence and conversation",
+        "atomic save",
+        "distinct SKU and price-value",
+        "MSIX identity",
+        "formal Store version"
+      ],
+      "knownStoreVersionCaveat": "0.1.0.0 is a QA-only candidate and not a verified Partner Center release version"
+    }
+  ]
+}
