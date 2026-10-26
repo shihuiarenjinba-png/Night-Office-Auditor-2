@@ -34,7 +34,7 @@ function rewrite(xml,env){
  const validVersion=attribute(tag,"Version");
  if(!/^\d+\.\d+\.\d+\.\d+$/.test(validVersion))throw Error("MSIX original Version malformed");
  const updated=tag.replace(/\bVersion\s*=\s*(["'])(.*?)\1/,'Version="'+gate.value.version+'"');
- if(updated===tag)throw Error("MSIX Version replacement failed");
+ if(attribute(updated,"Version")!==gate.value.version)throw Error("MSIX Version replacement failed");
  return xml.replace(tag,updated);
 }
 module.exports={rewrite,decode};
