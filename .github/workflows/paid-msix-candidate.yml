@@ -54,6 +54,10 @@ jobs:
           path: dist-paid-msix-candidate/MSIX_BUILD_HOLD.json
           retention-days: 14
           if-no-files-found: error
+      - name: Fail candidate gate explicitly if Identity is still missing
+        if: ${{ steps.identity.outputs.ready != 'true' }}
+        shell: pwsh
+        run: throw 'HOLD: Paid 24-case independent Partner Center Identity missing; no MSIX exists (see HOLD artifact)'
       - name: Install pinned Windows MSIX builder only after identity approval
         if: ${{ steps.identity.outputs.ready == 'true' }}
         run: npm install --no-save --no-package-lock --no-audit --no-fund electron@44.6.0 electron-builder@27.0.0-alpha.10
