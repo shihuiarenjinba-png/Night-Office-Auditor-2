@@ -21,6 +21,6 @@ app.whenReady().then(async()=>{
   }catch{event.preventDefault();}
  });
  await win.loadFile(path.join(__dirname,"index.html"));
- win.once("ready-to-show",()=>win.show());
+ win.show();
 }).catch(error=>{console.error("Application startup failed:",error);app.exit(1);});
 app.on("window-all-closed",()=>app.quit());
