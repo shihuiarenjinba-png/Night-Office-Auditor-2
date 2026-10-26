@@ -34,11 +34,16 @@ test("Store Version and explicit owner confirmation must pass independently",()=
  env.NIGHT_PAID_IDENTITY_OWNER_CONFIRMED="YES";
  assert.equal(validate(env).ready,true);
 });
-test("manifest hook verifies exact Name and Publisher, only changes approved Version",()=>{
- const input='<Package><Identity Name="TestOnly.UnregisteredPaidEdition" Publisher="CN=TestOnly-Not-A-Publisher" Version="0.1.0.0"/></Package>';
+test("manifest hook verifies exact Identity, both display names and approved Version",()=>{
+ const input='<Package><Identity Name="TestOnly.UnregisteredPaidEdition" Publisher="CN=TestOnly-Not-A-Publisher" Version="0.1.0.0"/>'+
+ '<Properties><DisplayName>Test edition</DisplayName><PublisherDisplayName>Test-Only</PublisherDisplayName></Properties>'+
+ '<Applications><Application><uap:VisualElements DisplayName="Test edition"/></Application></Applications></Package>';
  const env=example(),output=rewrite(input,env);
  assert.match(output,/Version="1\.0\.0\.0"/);
  assert.throws(()=>rewrite(input,{...env,NIGHT_PAID_PUBLISHER:"CN=other"}),/Publisher mismatch/);
+ assert.throws(()=>rewrite(input,{...env,NIGHT_PAID_STORE_DISPLAY_NAME:"Wrong title"}),/DisplayName mismatch/);
+ assert.throws(()=>rewrite(input,{...env,NIGHT_PAID_PUBLISHER_DISPLAY_NAME:"Wrong publisher name"}),/PublisherDisplayName mismatch/);
+ assert.throws(()=>rewrite(input.replace('VisualElements DisplayName="Test edition"','VisualElements DisplayName="Wrong title"'),env),/VisualElements DisplayName mismatch/);
 });
 test("candidate icons are valid PNG images with intended dimensions",()=>{
  for(const [w,h] of [[44,44],[50,50],[150,150],[310,150]]){
